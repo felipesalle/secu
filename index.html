@@ -1,0 +1,1636 @@
+<!DOCTYPE html>
+<html lang="es" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ligas La Salle Tuxtla</title>
+    <!-- Cargar las librerías de React y Babel para JSX -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Cargar la librería de Tailwind CSS desde un CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Poppins', 'Inter', 'sans-serif'],
+                    },
+                    animation: {
+                        'marquee': 'marquee 25s linear infinite',
+                        'fade-in-up': 'fadeInUp 0.5s ease-out',
+                    },
+                    keyframes: {
+                        marquee: {
+                            '0%': { transform: 'translateX(0%)' },
+                            '100%': { transform: 'translateX(-50%)' }
+                        },
+                        fadeInUp: {
+                            '0%': { opacity: 0, transform: 'translateY(20px)' },
+                            '100%': { opacity: 1, transform: 'translateY(0)' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            background-image: radial-gradient(circle at 1px 1px, rgba(0, 0, 0, 0.05) 1px, transparent 0);
+            background-size: 20px 20px;
+        }
+        .dark body {
+            background-color: #0f172a;
+            background-image: radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.05) 1px, transparent 0);
+        }
+        .nav-button {
+            @apply flex items-center py-2 px-5 rounded-full font-medium transition-all duration-300 text-white/80 hover:bg-white/10 hover:text-white;
+        }
+        .nav-button.active {
+            @apply bg-white text-[#101097] shadow-lg shadow-black/20;
+        }
+        .btn-primary {
+            @apply py-2.5 px-6 bg-gradient-to-r from-[#101097] to-[#2a2ad9] text-white font-semibold rounded-xl shadow-md hover:shadow-xl hover:shadow-indigo-500/30 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#101097] transition-all duration-300;
+        }
+        .btn-danger {
+            @apply py-2.5 px-6 bg-gradient-to-r from-[#CE0E2D] to-[#ff4d63] text-white font-semibold rounded-xl shadow-md hover:shadow-xl hover:shadow-red-500/30 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#CE0E2D] transition-all duration-300;
+        }
+        .card {
+            @apply bg-white dark:bg-gray-800/60 backdrop-blur-md rounded-2xl shadow-lg hover:shadow-2xl border border-gray-100 dark:border-gray-700/50 transition-all duration-300;
+        }
+        .input-modern {
+            @apply w-full p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#101097] focus:border-transparent transition-all duration-300;
+        }
+        /* FIX: Estilos globales para selects y opciones para que no salgan en blanco */
+        select, select option {
+            background-color: #ffffff;
+            color: #1f2937; /* gray-800 */
+        }
+        .dark select, .dark select option {
+            background-color: #1f2937; /* gray-800 */
+            color: #ffffff;
+        }
+        .ticker-track {
+            display: flex;
+            width: max-content;
+        }
+        .ticker-content {
+            display: flex;
+            flex-direction: row;
+            gap: 4rem;
+            padding-right: 4rem;
+        }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #101097; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #2a2ad9; }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 transition-colors duration-300">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useCallback, useMemo } = React;
+
+        // --- Constantes Globales ---
+        const dayOptions = [ { value: 1, label: 'Lunes' }, { value: 2, label: 'Martes' }, { value: 3, label: 'Miércoles' }, { value: 4, label: 'Jueves' }, { value: 5, label: 'Viernes' }, { value: 6, label: 'Sábado' }, { value: 0, label: 'Domingo' } ];
+        const leagueSortOrder = ['1ro Varonil', '1ro Femenil', '3ro Varonil', '3ro Femenil', 'Areas Varonil', 'Areas Femenil'];
+        const sortLeagues = (a, b) => leagueSortOrder.indexOf(a.name) - leagueSortOrder.indexOf(b.name);
+
+        // --- Icon Components ---
+        const PlusIcon = ({ className = 'w-5 h-5' }) => (
+            <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
+        );
+        const CalendarIcon = ({ className = 'w-5 h-5' }) => (
+            <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+        );
+        const TrophyIcon = ({ className = 'w-5 h-5' }) => (
+            <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /></svg>
+        );
+        const EditIcon = ({ className = 'w-5 h-5' }) => (
+            <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+        );
+        const TrashIcon = ({ className = 'w-5 h-5' }) => (
+            <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+        );
+        const ChevronDownIcon = ({ className = 'w-5 h-5' }) => (
+            <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+        );
+        const ChevronUpIcon = ({ className = 'w-5 h-5' }) => (
+            <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" /></svg>
+        );
+        const LockIcon = ({ className = 'w-5 h-5' }) => (
+            <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+        );
+        const CloseIcon = ({ className = 'w-5 h-5' }) => (
+            <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+        );
+
+        const SportIcon = ({ sport }) => {
+            const icons = { 'Fútbol': '⚽️', 'Básquetbol': '🏀', 'Tocho': '🏈', 'Voleibol': '🏐' };
+            return <span className="mr-2 text-xl">{icons[sport] || '🏆'}</span>;
+        };
+
+        const Modal = ({ show, message, onClose }) => {
+            if (!show) return null;
+            return (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-fade-in-up">
+                    <div className="bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-2xl max-w-sm w-full text-center border-t-4 border-[#101097]">
+                        <p className="text-gray-800 dark:text-white text-lg mb-6">{message}</p>
+                        <button onClick={onClose} className="btn-primary w-full">Aceptar</button>
+                    </div>
+                </div>
+            );
+        };
+
+        const TeamProfileModal = ({ team, players, matches, getTeamName, onClose }) => {
+            if (!team) return null;
+            const teamPlayers = players.filter(p => p.teamId === team.id).sort((a, b) => a.name.localeCompare(b.name));
+            const teamMatches = matches.filter(m => m.homeTeamId === team.id || m.awayTeamId === team.id)
+                .sort((a, b) => new Date(b.date) - new Date(a.date))
+                .slice(0, 5); // Últimos 5 partidos
+
+            return (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4" onClick={onClose}>
+                    <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto animate-fade-in-up" onClick={e => e.stopPropagation()}>
+                        {/* Header del Perfil */}
+                        <div className="bg-gradient-to-r from-[#101097] to-[#2a2ad9] p-8 rounded-t-3xl flex flex-col items-center text-white relative">
+                            <button onClick={onClose} className="absolute top-4 right-4 p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-colors" aria-label="Cerrar">
+                                <CloseIcon />
+                            </button>
+                            <img src={team.logoUrl} alt={team.name} className="w-28 h-28 rounded-full shadow-lg border-4 border-white/20 mb-4 object-contain bg-white p-1" />
+                            <h2 className="text-3xl font-extrabold tracking-tight text-center">{team.name}</h2>
+                        </div>
+                        
+                        {/* Cuerpo del Perfil */}
+                        <div className="p-6 space-y-6">
+                            {/* Plantilla */}
+                            <div>
+                                <h3 className="text-lg font-bold mb-4 text-gray-800 dark:text-white flex items-center border-b border-gray-100 dark:border-gray-700 pb-2">
+                                    <svg className="w-5 h-5 mr-2 text-[#101097]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                                    Plantilla ({teamPlayers.length})
+                                </h3>
+                                {teamPlayers.length > 0 ? (
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {teamPlayers.map(p => (
+                                            <div key={p.id} className="bg-gray-50 dark:bg-gray-900/50 p-3 rounded-xl flex items-center space-x-3">
+                                                <div className="w-8 h-8 rounded-full bg-[#101097] text-white flex items-center justify-center font-bold text-sm">
+                                                    {p.name.charAt(0).toUpperCase()}
+                                                </div>
+                                                <span className="text-sm font-medium text-gray-700 dark:text-gray-200 truncate">{p.name}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p className="text-gray-400 text-sm text-center py-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl">No hay jugadores registrados.</p>
+                                )}
+                            </div>
+
+                            {/* Últimos Partidos */}
+                            <div>
+                                <h3 className="text-lg font-bold mb-4 text-gray-800 dark:text-white flex items-center border-b border-gray-100 dark:border-gray-700 pb-2">
+                                    <CalendarIcon className="w-5 h-5 mr-2 text-[#101097]" /> Últimos Partidos
+                                </h3>
+                                {teamMatches.length > 0 ? (
+                                    <div className="space-y-3">
+                                        {teamMatches.map(m => {
+                                            const isHome = m.homeTeamId === team.id;
+                                            const oppId = isHome ? m.awayTeamId : m.homeTeamId;
+                                            const myScore = isHome ? m.scoreHome : m.scoreAway;
+                                            const oppScore = isHome ? m.scoreAway : m.scoreHome;
+                                            const isWin = myScore > oppScore;
+                                            const isLoss = myScore < oppScore;
+                                            
+                                            return (
+                                                <div key={m.id} className="bg-gray-50 dark:bg-gray-900/50 p-3 rounded-xl flex items-center justify-between text-sm">
+                                                    <span className="text-gray-500 w-16">{m.date}</span>
+                                                    <span className={`font-bold px-2 py-1 rounded-md text-xs ${isWin ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' : isLoss ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'}`}>
+                                                        {isWin ? 'G' : isLoss ? 'P' : 'E'}
+                                                    </span>
+                                                    <span className="font-medium text-gray-700 dark:text-gray-300 flex-1 text-right truncate ml-2">{getTeamName(oppId)}</span>
+                                                    <span className="font-extrabold text-gray-800 dark:text-white ml-2 bg-white dark:bg-gray-800 px-2 py-1 rounded shadow-sm">
+                                                        {myScore !== null ? `${myScore} - ${oppScore}` : 'VS'}
+                                                    </span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <p className="text-gray-400 text-sm text-center py-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl">No hay partidos recientes.</p>
+                                )}
+                            </div>
+                        </div>
+                        
+                        <div className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-b-3xl flex justify-end sticky bottom-0">
+                            <button onClick={onClose} className="btn-primary">Cerrar Ficha</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const StandingsTable = ({ standings, onTeamClick }) => {
+            if (standings.length === 0) {
+                return <p className="text-center text-gray-500 dark:text-gray-400 py-4">No hay datos de clasificación para esta liga.</p>;
+            }
+            const positionColors = [
+                'border-l-4 border-yellow-400 bg-yellow-50/50 dark:bg-yellow-900/10', // 1st Gold
+                'border-l-4 border-gray-300 bg-gray-50/50 dark:bg-gray-700/10',      // 2nd Silver
+                'border-l-4 border-orange-700 bg-orange-50/50 dark:bg-orange-900/10', // 3rd Bronze
+                'border-l-4 border-transparent'
+            ];
+            return (
+                <div className="overflow-x-auto rounded-2xl shadow-lg bg-white dark:bg-gray-800/60 backdrop-blur-md">
+                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead className="bg-gray-50 dark:bg-gray-900/50">
+                            <tr>
+                                <th className="px-4 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider w-12">#</th>
+                                <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Equipo</th>
+                                {['PJ', 'G', 'E', 'P', 'GF', 'GC', 'DG', 'Pts'].map(header => (
+                                    <th key={header} className={`px-4 py-4 text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider ${header === 'Pts' ? 'text-[#101097] dark:text-blue-400' : 'text-center'}`}>{header}</th>
+                                ))}
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                            {standings.map((team, index) => (
+                                <tr key={team.id} onClick={() => onTeamClick(team.id)} className={`${positionColors[index] || positionColors[3]} hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-200 cursor-pointer`}>
+                                    <td className="px-4 py-4 whitespace-nowrap text-sm font-bold text-gray-500 dark:text-gray-400">{index + 1}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                                        <div className="flex items-center group">
+                                            <img src={team.logoUrl} alt={`Logo de ${team.teamName}`} className="w-8 h-8 rounded-full mr-3 shadow-sm object-contain bg-white p-0.5" />
+                                            <span className="group-hover:text-[#101097] dark:group-hover:text-blue-400 transition-colors font-semibold">{team.teamName}</span>
+                                        </div>
+                                    </td>
+                                    <td className="px-4 py-4 text-sm text-center text-gray-600 dark:text-gray-300">{team.played}</td>
+                                    <td className="px-4 py-4 text-sm text-center text-gray-600 dark:text-gray-300">{team.wins}</td>
+                                    <td className="px-4 py-4 text-sm text-center text-gray-600 dark:text-gray-300">{team.draws}</td>
+                                    <td className="px-4 py-4 text-sm text-center text-gray-600 dark:text-gray-300">{team.losses}</td>
+                                    <td className="px-4 py-4 text-sm text-center text-gray-600 dark:text-gray-300">{team.goalsFor}</td>
+                                    <td className="px-4 py-4 text-sm text-center text-gray-600 dark:text-gray-300">{team.goalsAgainst}</td>
+                                    <td className="px-4 py-4 text-sm text-center text-gray-600 dark:text-gray-300">{team.goalDifference > 0 ? '+' + team.goalDifference : team.goalDifference}</td>
+                                    <td className="px-4 py-4 text-sm text-center font-extrabold text-gray-900 dark:text-white bg-gray-50/50 dark:bg-gray-900/30">{team.points}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            );
+        };
+
+        const TopScorersTable = ({ scorers }) => {
+            if (scorers.length === 0) {
+                return <p className="text-center text-gray-500 dark:text-gray-400 py-4">No hay anotadores registrados.</p>;
+            }
+            return (
+                <div className="overflow-x-auto rounded-2xl shadow-lg bg-white dark:bg-gray-800/60 backdrop-blur-md">
+                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead className="bg-gray-50 dark:bg-gray-900/50">
+                            <tr>
+                                <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Jugador</th>
+                                <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Equipo</th>
+                                <th className="px-6 py-4 text-center text-xs font-bold text-[#101097] dark:text-blue-400 uppercase tracking-wider">Goles</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                            {scorers.map((scorer, index) => (
+                                <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-200">
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900 dark:text-white flex items-center">
+                                        {index < 3 && <span className="mr-2">{['🥇', '🥈', '🥉'][index]}</span>}
+                                        {scorer.playerName}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300 flex items-center">
+                                        <img src={scorer.logoUrl} className="w-5 h-5 rounded-full mr-2 shadow-sm object-contain bg-white p-0.5" alt="" />
+                                        {scorer.teamName}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-extrabold text-center text-lg text-[#101097] dark:text-blue-400">{scorer.goals}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            );
+        };
+
+        const ResultsList = ({ matches, getTeamName, getTeamLogo, onMatchClick }) => {
+            const recentMatches = matches.filter(m => m.scoreHome !== null).sort((a, b) => new Date(b.date) - new Date(a.date));
+            if (recentMatches.length === 0) {
+                return <p className="text-center text-sm text-gray-500 dark:text-gray-400 py-4">No hay resultados recientes.</p>;
+            }
+            return (
+                <div className="space-y-3 mt-4">
+                    {recentMatches.map(match => (
+                        <div key={match.id} onClick={() => onMatchClick(match)} className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl hover:shadow-lg hover:bg-white dark:hover:bg-gray-800 cursor-pointer transition-all duration-200 shadow-sm border border-gray-100 dark:border-gray-700">
+                            <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wider font-semibold mb-2">{new Date(match.date).toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric' })}</p>
+                            <div className="flex items-center justify-between">
+                                <div className="flex-1 text-sm font-bold flex items-center text-gray-800 dark:text-white">
+                                    <img src={getTeamLogo(match.homeTeamId)} className="w-7 h-7 rounded-full mr-2 shadow-sm object-contain bg-white p-0.5" alt="" />
+                                    <span className="truncate">{getTeamName(match.homeTeamId)}</span>
+                                </div>
+                                <div className="flex items-center space-x-2 mx-4 bg-white dark:bg-gray-800 px-3 py-1 rounded-lg shadow-sm">
+                                    <span className="text-xl font-extrabold text-[#101097] dark:text-blue-400">{match.scoreHome}</span>
+                                    <span className="text-xs text-gray-400">-</span>
+                                    <span className="text-xl font-extrabold text-[#101097] dark:text-blue-400">{match.scoreAway}</span>
+                                </div>
+                                <div className="flex-1 text-sm font-bold flex items-center justify-end text-right text-gray-800 dark:text-white">
+                                    <span className="truncate">{getTeamName(match.awayTeamId)}</span>
+                                    <img src={getTeamLogo(match.awayTeamId)} className="w-7 h-7 rounded-full ml-2 shadow-sm object-contain bg-white p-0.5" alt="" />
+                                </div>
+                            </div>
+                            {match.status === 'Anulado' && <p className="text-center text-xs text-red-500 dark:text-red-400 font-bold mt-2 bg-red-100 dark:bg-red-900/30 rounded-full py-1">PARTIDO ANULADO</p>}
+                        </div>
+                    ))}
+                </div>
+            );
+        };
+
+        const MatchDetailsModal = ({ match, onClose, getPlayerName, getTeamName }) => {
+            if (!match) return null;
+            const homeScorers = match.scorers?.filter(s => s.teamId === match.homeTeamId) || [];
+            const awayScorers = match.scorers?.filter(s => s.teamId === match.awayTeamId) || [];
+            return (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4" onClick={onClose}>
+                    <div className="bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-2xl max-w-lg w-full text-left border-t-4 border-[#101097] max-h-[90vh] overflow-y-auto animate-fade-in-up" onClick={e => e.stopPropagation()}>
+                        <div className="text-center mb-6">
+                            <p className="text-sm text-gray-400 dark:text-gray-500 uppercase tracking-wider font-semibold mb-2">{new Date(match.date).toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                            <div className="flex items-center justify-center space-x-6">
+                                <div className="font-bold text-lg w-24 text-right truncate">{getTeamName(match.homeTeamId)}</div>
+                                <div className="text-4xl font-extrabold text-[#101097] dark:text-blue-400 bg-gray-50 dark:bg-gray-900 px-4 py-2 rounded-xl shadow-sm">{match.scoreHome} - {match.scoreAway}</div>
+                                <div className="font-bold text-lg w-24 text-left truncate">{getTeamName(match.awayTeamId)}</div>
+                            </div>
+                        </div>
+                        <h4 className="text-lg font-semibold mb-4 border-b border-gray-100 dark:border-gray-700 pb-2 text-gray-800 dark:text-white">Anotadores</h4>
+                        {match.scorers?.length > 0 ? (
+                            <div className="grid grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <h5 className="font-bold text-gray-600 dark:text-gray-300 text-sm">{getTeamName(match.homeTeamId)}</h5>
+                                    <ul className="space-y-1">
+                                        {homeScorers.map((scorer, i) => <li key={i} className="text-sm text-gray-700 dark:text-gray-200 flex justify-between"><span>{getPlayerName(scorer.playerId)}</span> <span className="font-bold text-[#101097] dark:text-blue-400">{scorer.count}⚽</span></li>)}
+                                    </ul>
+                                    {homeScorers.length === 0 && <p className="text-sm text-gray-400">Sin anotadores.</p>}
+                                </div>
+                                <div className="space-y-2">
+                                    <h5 className="font-bold text-gray-600 dark:text-gray-300 text-sm">{getTeamName(match.awayTeamId)}</h5>
+                                    <ul className="space-y-1">
+                                        {awayScorers.map((scorer, i) => <li key={i} className="text-sm text-gray-700 dark:text-gray-200 flex justify-between"><span>{getPlayerName(scorer.playerId)}</span> <span className="font-bold text-[#101097] dark:text-blue-400">{scorer.count}⚽</span></li>)}
+                                    </ul>
+                                     {awayScorers.length === 0 && <p className="text-sm text-gray-400">Sin anotadores.</p>}
+                                </div>
+                            </div>
+                        ) : (
+                            <p className="text-center text-gray-500 dark:text-gray-400 py-3">No se registraron anotadores para este partido.</p>
+                        )}
+                        <div className="text-right mt-8">
+                            <button onClick={onClose} className="btn-primary">Cerrar</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const EditTeamModal = ({ team, onClose, onSave, showMessage }) => {
+            if (!team) return null;
+
+            const [name, setName] = useState(team.name);
+            const [logoUrl, setLogoUrl] = useState(team.logoUrl);
+
+            const handleSave = () => {
+                if (!name.trim() || !logoUrl.trim()) {
+                    showMessage("El nombre y la URL del logo no pueden estar vacíos.");
+                    return;
+                }
+                onSave(team.id, name, logoUrl);
+            };
+
+            return (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4">
+                    <div className="bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-2xl max-w-md w-full text-left border-t-4 border-[#101097] animate-fade-in-up">
+                        <h3 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Editar Equipo</h3>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">Nombre del Equipo</label>
+                                <input type="text" value={name} onChange={(e) => setName(e.target.value)} className="input-modern" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">URL del Logo</label>
+                                <input type="text" value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} className="input-modern" />
+                            </div>
+                        </div>
+                        <div className="flex justify-end space-x-3 mt-8">
+                            <button onClick={onClose} className="py-2.5 px-6 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white font-semibold rounded-xl shadow-sm hover:bg-gray-200 dark:hover:bg-gray-600 transition-all">Cancelar</button>
+                            <button onClick={handleSave} className="btn-primary">Guardar Cambios</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const AddPlayersModal = ({ team, onClose, onAdd, showMessage }) => {
+            if (!team) return null;
+
+            const [playerNames, setPlayerNames] = useState('');
+
+            const handleAdd = () => {
+                const names = playerNames.split('\n').map(name => name.trim()).filter(name => name);
+                if (names.length === 0) {
+                    showMessage("Por favor, introduce al menos un nombre de jugador.");
+                    return;
+                }
+                onAdd(team.id, names);
+                setPlayerNames('');
+            };
+
+            return (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4">
+                    <div className="bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-2xl max-w-md w-full text-left border-t-4 border-[#101097] animate-fade-in-up">
+                        <h3 className="text-2xl font-bold mb-2 text-gray-900 dark:text-white">Añadir Jugadores a <span className="text-[#101097] dark:text-blue-400">{team.name}</span></h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">Escribe un nombre por línea. Puedes pegar una lista desde Excel o un editor de texto.</p>
+                        <textarea value={playerNames} onChange={(e) => setPlayerNames(e.target.value)} rows="10" className="input-modern" placeholder="Juan Pérez&#10;Maria García&#10;..." />
+                        <div className="flex justify-end space-x-3 mt-6">
+                            <button onClick={onClose} className="py-2.5 px-6 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white font-semibold rounded-xl shadow-sm hover:bg-gray-200 dark:hover:bg-gray-600 transition-all">Cancelar</button>
+                            <button onClick={handleAdd} className="btn-primary">Añadir Jugadores</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const MatchesView = ({ matches, getTeamName, appId, db, showMessage, leagues, players, getLeagueName, getPlayersByTeam, selectedDateFilter, selectedLeagueFilter }) => {
+            const [selectedMatch, setSelectedMatch] = useState(null);
+            const [scoreHome, setScoreHome] = useState(0);
+            const [scoreAway, setScoreAway] = useState(0);
+            const [scorers, setScorers] = useState([]);
+            const [isEditing, setIsEditing] = useState(false);
+
+            const handleEditMatch = (match) => {
+                setSelectedMatch(match);
+                setScoreHome(match.scoreHome !== null ? match.scoreHome : 0);
+                setScoreAway(match.scoreAway !== null ? match.scoreAway : 0);
+                setScorers(match.scorers || []);
+                setIsEditing(true);
+            };
+
+            const handleSaveMatch = async () => {
+                if (!selectedMatch) return;
+                try {
+                    const { doc, setDoc } = window.firebaseModules;
+                    await setDoc(doc(db, `artifacts/${appId}/public/data/matches`, selectedMatch.id), {
+                        ...selectedMatch,
+                        scoreHome: parseInt(scoreHome, 10),
+                        scoreAway: parseInt(scoreAway, 10),
+                        scorers,
+                    });
+                    setIsEditing(false);
+                    setSelectedMatch(null);
+                    showMessage("Partido actualizado con éxito.");
+                } catch (e) {
+                    console.error("Error al guardar el partido:", e);
+                    showMessage("Error al guardar el partido.");
+                }
+            };
+
+            const handleAddScorer = (teamId) => {
+                setScorers(prev => [...prev, { playerId: '', teamId, count: 1 }]);
+            };
+
+            const handleScorerChange = (index, field, value) => {
+                const newScorers = [...scorers];
+                newScorers[index][field] = value;
+                setScorers(newScorers);
+            };
+
+            const handleRemoveScorer = (index) => {
+                setScorers(prev => prev.filter((_, i) => i !== index));
+            };
+
+            const handleNullifyMatch = async () => {
+                if (!selectedMatch) return;
+                if (confirm("¿Estás seguro de que quieres anular este partido? Se registrará como un empate 0-0 y se borrarán los goleadores.")) {
+                    try {
+                        const { doc, setDoc } = window.firebaseModules;
+                        await setDoc(doc(db, `artifacts/${appId}/public/data/matches`, selectedMatch.id), {
+                            ...selectedMatch,
+                            scoreHome: 0,
+                            scoreAway: 0,
+                            scorers: [],
+                            status: 'Anulado'
+                        });
+                        setIsEditing(false);
+                        setSelectedMatch(null);
+                        showMessage("Partido anulado con éxito (Empate 0-0).");
+                    } catch (e) {
+                        console.error("Error al anular el partido:", e);
+                        showMessage("Error al anular el partido.");
+                    }
+                }
+            };
+
+            const filteredMatches = matches.filter(match => {
+                const dateMatch = selectedDateFilter ? match.date === selectedDateFilter : true;
+                const leagueMatch = selectedLeagueFilter ? match.leagueId === selectedLeagueFilter : true;
+                return dateMatch && leagueMatch;
+            });
+
+            const sortedMatches = [...filteredMatches].sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            return (
+                <div className="space-y-6">
+                    {isEditing && selectedMatch ? (
+                        <div className="bg-white dark:bg-gray-800/60 backdrop-blur-md p-8 rounded-3xl shadow-xl space-y-6 border-t-4 border-[#101097] animate-fade-in-up">
+                            <h4 className="text-2xl font-bold text-gray-900 dark:text-white">Editar Partido</h4>
+                            <p className="text-gray-500 dark:text-gray-400 flex items-center">
+                                <SportIcon sport={leagues.find(l => l.id === selectedMatch.leagueId)?.sport} />
+                                {getLeagueName(selectedMatch.leagueId)} - {selectedMatch.date}
+                            </p>
+                            <div className="flex flex-wrap items-center gap-6 bg-gray-50 dark:bg-gray-900/50 p-6 rounded-2xl">
+                                <div className="flex-1 min-w-[150px]">
+                                    <label className="text-sm font-medium text-gray-600 dark:text-gray-300 block mb-1">Local</label>
+                                    <div className="flex items-center gap-2">
+                                        <input type="number" min="0" value={scoreHome} onChange={(e) => setScoreHome(Math.max(0, parseInt(e.target.value, 10)))} className="input-modern text-center text-xl font-bold w-20" />
+                                        <span className="font-bold text-gray-400">{getTeamName(selectedMatch.homeTeamId)}</span>
+                                    </div>
+                                </div>
+                                <div className="flex-1 min-w-[150px]">
+                                    <label className="text-sm font-medium text-gray-600 dark:text-gray-300 block mb-1">Visitante</label>
+                                    <div className="flex items-center gap-2">
+                                        <span className="font-bold text-gray-400">{getTeamName(selectedMatch.awayTeamId)}</span>
+                                        <input type="number" min="0" value={scoreAway} onChange={(e) => setScoreAway(Math.max(0, parseInt(e.target.value, 10)))} className="input-modern text-center text-xl font-bold w-20" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="space-y-4">
+                                <h5 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Goleadores</h5>
+                                <div className="flex flex-wrap space-x-2 gap-2">
+                                    <button onClick={() => handleAddScorer(selectedMatch.homeTeamId)} className="btn-primary text-sm py-2 px-4">+ Local</button>
+                                    <button onClick={() => handleAddScorer(selectedMatch.awayTeamId)} className="btn-primary text-sm py-2 px-4">+ Visitante</button>
+                                </div>
+                                {scorers.map((scorer, index) => (
+                                    <div key={index} className="flex flex-wrap items-center gap-2 bg-gray-50 dark:bg-gray-900/50 p-3 rounded-xl border border-gray-100 dark:border-gray-700">
+                                        <select value={scorer.playerId} onChange={(e) => handleScorerChange(index, 'playerId', e.target.value)} className="input-modern flex-1 min-w-[150px] py-2">
+                                            <option value="">Selecciona jugador</option>
+                                            {getPlayersByTeam(scorer.teamId).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                        </select>
+                                        <input type="number" min="1" value={scorer.count} onChange={(e) => handleScorerChange(index, 'count', parseInt(e.target.value, 10))} className="input-modern w-20 text-center font-bold py-2" />
+                                        <button onClick={() => handleRemoveScorer(index)} className="p-2 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors"><TrashIcon /></button>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="flex flex-wrap justify-end gap-3 pt-6 border-t border-gray-100 dark:border-gray-700">
+                                <button onClick={handleNullifyMatch} className="btn-danger">Anular (0-0)</button>
+                                <button onClick={() => setIsEditing(false)} className="py-2.5 px-6 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white font-semibold rounded-xl shadow-sm hover:bg-gray-200 dark:hover:bg-gray-600 transition-all">Cancelar</button>
+                                <button onClick={handleSaveMatch} className="btn-primary">Guardar</button>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {leagues.length === 0 ? (
+                                <p className="text-center text-gray-500 dark:text-gray-400 py-8 col-span-full">No hay partidos para mostrar. Por favor, crea las ligas y genera el calendario.</p>
+                            ) : (
+                                sortedMatches.map(match => (
+                                    <div key={match.id} className="card p-6 flex flex-col animate-fade-in-up">
+                                        <div className="flex justify-between items-center mb-4">
+                                            <span className="text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-indigo-50 text-[#101097] dark:bg-indigo-900/30 dark:text-indigo-300 flex items-center">
+                                                <SportIcon sport={leagues.find(l => l.id === match.leagueId)?.sport} /> {getLeagueName(match.leagueId)}
+                                            </span>
+                                            <button onClick={() => handleEditMatch(match)} className="text-gray-400 hover:text-[#101097] dark:hover:text-blue-400 p-2 rounded-full hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors" aria-label="Editar"><EditIcon /></button>
+                                        </div>
+                                        <p className="text-sm text-gray-400 dark:text-gray-500 mb-4 font-medium">{match.date}</p>
+                                        
+                                        <div className="flex items-center justify-between mb-4">
+                                            <div className="flex-1 text-right pr-3">
+                                                <p className="font-bold text-gray-800 dark:text-white text-sm truncate">{getTeamName(match.homeTeamId)}</p>
+                                            </div>
+                                            <div className="mx-2 text-center">
+                                                {match.scoreHome !== null ? (
+                                                    <div className="bg-gray-100 dark:bg-gray-900 px-3 py-1 rounded-lg font-extrabold text-lg text-[#101097] dark:text-blue-400 shadow-sm">
+                                                        {match.scoreHome} - {match.scoreAway}
+                                                    </div>
+                                                ) : (
+                                                    <div className="bg-gray-100 dark:bg-gray-900 px-3 py-1 rounded-lg text-xs font-bold text-gray-400 uppercase">VS</div>
+                                                )}
+                                            </div>
+                                            <div className="flex-1 text-left pl-3">
+                                                <p className="font-bold text-gray-800 dark:text-white text-sm truncate">{getTeamName(match.awayTeamId)}</p>
+                                            </div>
+                                        </div>
+
+                                        {match.status === 'Anulado' && <p className="text-center text-xs text-red-500 dark:text-red-400 font-bold mt-1 bg-red-100 dark:bg-red-900/30 rounded-full py-1">PARTIDO ANULADO</p>}
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const LeagueCard = ({ league, teams, players, appId, db, showMessage, onMatchDayChange, onEditTeam, onAddPlayers, onAddNewTeam }) => {
+            const [isExpanded, setIsExpanded] = useState(false);
+
+            const handleDeletePlayer = async (playerId) => {
+                if (confirm("¿Estás seguro de que quieres eliminar a este jugador?")) {
+                    const { doc, deleteDoc } = window.firebaseModules;
+                    try {
+                        await deleteDoc(doc(db, `artifacts/${appId}/public/data/players`, playerId));
+                        showMessage("Jugador eliminado con éxito.");
+                    } catch (e) { console.error("Error al eliminar jugador:", e); showMessage("Error al eliminar jugador."); }
+                }
+            };
+
+            return (
+                <div className="bg-gray-50 dark:bg-gray-900/50 p-6 rounded-2xl shadow-inner border border-gray-100 dark:border-gray-700/50 transition-all duration-300">
+                    <div className="flex flex-wrap items-center justify-between gap-4">
+                        <h4 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center">
+                            <SportIcon sport={league.sport} /> {league.name}
+                        </h4>
+                        <div className="flex items-center space-x-3">
+                            <select value={league.matchDay ?? ''} onChange={(e) => onMatchDayChange(league.id, e.target.value)} className="input-modern text-sm py-2 w-auto" onClick={(e) => e.stopPropagation()}>
+                                <option value="">-- Asignar Día --</option>
+                                {dayOptions.map(day => <option key={day.value} value={day.value}>{day.label}</option>)}
+                            </select>
+                            <button onClick={() => setIsExpanded(!isExpanded)} className="p-2 text-[#101097] hover:text-[#2a2ad9] dark:text-blue-400 dark:hover:text-blue-300 bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md transition-all" aria-label="Expandir">{isExpanded ? <ChevronUpIcon /> : <ChevronDownIcon />}</button>
+                        </div>
+                    </div>
+                    {isExpanded && (
+                        <div className="mt-6 space-y-6">
+                            {teams.map(team => (
+                                <div key={team.id} className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700/50 space-y-3">
+                                    <div className="flex items-center justify-between flex-wrap gap-3">
+                                        <div className="flex items-center space-x-3">
+                                            <img src={team.logoUrl} alt={`Logo de ${team.name}`} className="w-10 h-10 rounded-full shadow-md object-contain bg-white p-0.5" />
+                                            <span className="font-semibold text-gray-800 dark:text-white text-lg">{team.name}</span>
+                                            <button onClick={() => onEditTeam(team)} className="text-gray-400 hover:text-blue-500 p-1 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors" aria-label="Editar">
+                                                <EditIcon className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                        <button onClick={() => onAddPlayers(team)} className="btn-primary text-xs py-2 px-4">Añadir Jugadores</button>
+                                    </div>
+                                    <ul className="list-none text-gray-600 dark:text-gray-300 space-y-2 mt-2 pl-0">
+                                        {players.filter(p => p.teamId === team.id).length > 0 ? (
+                                            players.filter(p => p.teamId === team.id).map(player => (
+                                                <li key={player.id} className="flex items-center justify-between text-sm bg-gray-50 dark:bg-gray-900/50 px-4 py-2 rounded-lg">
+                                                    <span className="font-medium">{player.name}</span>
+                                                    <button onClick={() => handleDeletePlayer(player.id)} className="text-red-400 hover:text-red-600 p-1 rounded-full hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors" aria-label="Eliminar"><TrashIcon className="w-4 h-4" /></button>
+                                                </li>
+                                            ))
+                                        ) : (
+                                            <li className="text-sm text-gray-400 italic px-4 py-2">No hay jugadores en este equipo.</li>
+                                        )}
+                                    </ul>
+                                </div>
+                            ))}
+                            <div className="pt-4 mt-4 border-t border-gray-200 dark:border-gray-700 flex justify-center">
+                                <button onClick={() => onAddNewTeam(league.id)} className="btn-primary flex items-center text-sm">
+                                    <PlusIcon className="w-4 h-4 mr-2" /> Añadir Nuevo Equipo
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const Ticker = ({ matches, getTeamName }) => {
+            const today = new Date().toISOString().split('T')[0];
+            const upcoming = matches.filter(m => m.date >= today && m.scoreHome === null).slice(0, 15);
+            if (upcoming.length === 0) return null;
+            const items = [...upcoming, ...upcoming];
+
+            return (
+                <div className="bg-gray-900 text-white py-2 overflow-hidden whitespace-nowrap relative border-b border-gray-700/50">
+                    <div className="ticker-track animate-marquee">
+                        <div className="ticker-content">
+                            {items.map((m, i) => (
+                                <span key={i} className="text-sm font-medium flex items-center">
+                                    <CalendarIcon className="w-4 h-4 mr-2 text-yellow-400" />
+                                    <span className="text-gray-400 mr-2">{m.date}</span>
+                                    <span className="font-bold text-white">{getTeamName(m.homeTeamId)}</span>
+                                    <span className="mx-2 text-yellow-400">VS</span>
+                                    <span className="font-bold text-white">{getTeamName(m.awayTeamId)}</span>
+                                </span>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [view, setView] = useState('standings');
+            const [tournaments, setTournaments] = useState([]);
+            const [selectedTournamentId, setSelectedTournamentId] = useState('');
+            const [leagues, setLeagues] = useState([]);
+            const [teams, setTeams] = useState([]);
+            const [players, setPlayers] = useState([]);
+            const [matches, setMatches] = useState([]);
+            const [isLoading, setIsLoading] = useState(true);
+            const [user, setUser] = useState(null);
+            const [appId, setAppId] = useState(null);
+            const [showModal, setShowModal] = useState(false);
+            const [modalMessage, setModalMessage] = useState('');
+            const [selectedSport, setSelectedSport] = useState('Fútbol');
+            const [isAuthReady, setIsAuthReady] = useState(false);
+            const [email, setEmail] = useState('');
+            const [password, setPassword] = useState('');
+            const [selectedDateFilter, setSelectedDateFilter] = useState('');
+            const [selectedLeagueFilter, setSelectedLeagueFilter] = useState('');
+            const [selectedStandingsLeagueFilter, setSelectedStandingsLeagueFilter] = useState('');
+            const [upcomingMatchesDate, setUpcomingMatchesDate] = useState('');
+            const [refereeMatchDate, setRefereeMatchDate] = useState('');
+            const [scheduleStartDate, setScheduleStartDate] = useState('');
+            const [scheduleEndDate, setScheduleEndDate] = useState('');
+            const [matchDetails, setMatchDetails] = useState(null);
+            const [editingTeam, setEditingTeam] = useState(null);
+            const [addingPlayersTeam, setAddingPlayersTeam] = useState(null);
+            const [teamProfile, setTeamProfile] = useState(null); // Estado para el perfil del equipo
+
+            const showMessage = (message) => { setModalMessage(message); setShowModal(true); };
+            const handleMatchClick = (match) => { setMatchDetails(match); };
+            const handleTeamClick = (teamId) => { const team = teams.find(t => t.id === teamId); if(team) setTeamProfile(team); };
+
+            const getTeamName = useCallback((teamId) => teams.find(t => t.id === teamId)?.name || 'Equipo Desconocido', [teams]);
+            const getTeamLogo = useCallback((teamId) => teams.find(t => t.id === teamId)?.logoUrl || '', [teams]);
+            const getPlayerName = useCallback((playerId) => players.find(p => p.id === playerId)?.name || 'Jugador Desconocido', [players]);
+
+            useEffect(() => {
+                const initFirebase = async () => {
+                    try {
+                        const { initializeApp, getAuth, onAuthStateChanged, getFirestore } = window.firebaseModules;
+                        const firebaseConfig = { apiKey: "AIzaSyBHX9ezfBiEZhxIDZTr-OTB5hgKV-zt0G4", authDomain: "torneos-lasalle-2.firebaseapp.com", projectId: "torneos-lasalle-2", storageBucket: "torneos-lasalle-2.firebasestorage.app", messagingSenderId: "860168864523", appId: "1:860168864523:web:1da5a47fa8ccb20def980e" };
+                        const app = initializeApp(firebaseConfig);
+                        const auth = getAuth(app);
+                        setAppId('lasalle-secundaria-deportes');
+                        window.firebaseApp = { ...window.firebaseApp, app, auth, db: getFirestore(app) };
+
+                        onAuthStateChanged(auth, (user) => {
+                            setUser(user);
+                            setIsAuthReady(true);
+                            setIsLoading(false);
+                        });
+                    } catch (e) {
+                        console.error("Firebase init error", e);
+                        setIsLoading(false);
+                        document.getElementById('root').innerHTML = `<div class="p-8 text-center text-red-500">Error: No se pudo cargar Firebase.</div>`;
+                    }
+                };
+                initFirebase();
+            }, []);
+
+            useEffect(() => {
+                if (!isAuthReady || !appId) return;
+                const publicDataPath = `artifacts/${appId}/public/data`;
+                const { collection, onSnapshot } = window.firebaseModules;
+                const db = window.firebaseApp.db;
+                const collections = ['tournaments', 'leagues', 'teams', 'players', 'matches'];
+                const setters = { tournaments: setTournaments, leagues: setLeagues, teams: setTeams, players: setPlayers, matches: setMatches };
+
+                const unsubscribers = collections.map(col =>
+                    onSnapshot(collection(db, `${publicDataPath}/${col}`), (snapshot) => {
+                        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        if (col === 'tournaments') {
+                            data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                            setTournaments(data);
+                            if (data.length > 0 && (!selectedTournamentId || !data.find(t => t.id === selectedTournamentId))) {
+                                setSelectedTournamentId(data[0].id);
+                            } else if (data.length === 0) {
+                                setSelectedTournamentId('');
+                            }
+                        } else {
+                            setters[col](data);
+                        }
+                    })
+                );
+                return () => unsubscribers.forEach(unsub => unsub());
+            }, [appId, isAuthReady, selectedTournamentId]);
+
+            const handleLogin = async () => {
+                const { signInWithEmailAndPassword } = window.firebaseModules;
+                const auth = window.firebaseApp.auth;
+                try {
+                    await signInWithEmailAndPassword(auth, email, password);
+                    showMessage("Inicio de sesión exitoso.");
+                } catch (error) {
+                    showMessage("Error al iniciar sesión: " + error.message);
+                }
+            };
+
+            const handleLogout = async () => {
+                const { signOut } = window.firebaseModules;
+                const auth = window.firebaseApp.auth;
+                try {
+                    await signOut(auth);
+                    showMessage("Sesión cerrada.");
+                } catch (error) {
+                    showMessage("Error al cerrar sesión: " + error.message);
+                }
+            };
+
+            const handleMatchDayChange = async (leagueId, day) => {
+                if (!user || !appId) return;
+                const { doc, updateDoc } = window.firebaseModules;
+                try {
+                    await updateDoc(doc(window.firebaseApp.db, `artifacts/${appId}/public/data/leagues`, leagueId), { matchDay: day ? parseInt(day, 10) : null });
+                } catch (e) { console.error("Error updating match day:", e); showMessage("Error al actualizar el día."); }
+            };
+
+            const handleEditTeam = (team) => setEditingTeam(team);
+            const handleCloseEditTeam = () => setEditingTeam(null);
+
+            const handleUpdateTeam = async (teamId, name, logoUrl) => {
+                if (!user || !appId) return;
+                const { doc, updateDoc } = window.firebaseModules;
+                try {
+                    await updateDoc(doc(window.firebaseApp.db, `artifacts/${appId}/public/data/teams`, teamId), { name, logoUrl });
+                    showMessage("Equipo actualizado con éxito.");
+                    handleCloseEditTeam();
+                } catch (e) {
+                    console.error("Error updating team:", e); showMessage("Error al actualizar el equipo.");
+                }
+            };
+
+            const handleOpenAddPlayersModal = (team) => setAddingPlayersTeam(team);
+
+            const handleAddMultiplePlayers = async (teamId, names) => {
+                if (!user || !appId) return;
+                const { db } = window.firebaseApp;
+                const { doc, setDoc } = window.firebaseModules;
+                const playerPromises = names.map(name => {
+                    const playerId = crypto.randomUUID();
+                    return setDoc(doc(db, `artifacts/${appId}/public/data/players`, playerId), { id: playerId, name, teamId });
+                });
+                try {
+                    await Promise.all(playerPromises);
+                    showMessage(`${names.length} jugador(es) añadido(s) con éxito.`);
+                    setAddingPlayersTeam(null);
+                } catch (e) {
+                    console.error("Error adding multiple players:", e);
+                    showMessage("Error al añadir los jugadores.");
+                }
+            };
+
+            const handleAddNewTeam = async (leagueId) => {
+                if (!user || !appId) return;
+                const teamName = prompt("Introduce el nombre del nuevo equipo:");
+                if (!teamName || !teamName.trim()) return;
+                setIsLoading(true);
+                const { db } = window.firebaseApp;
+                const { doc, setDoc } = window.firebaseModules;
+                const teamsInLeague = teams.filter(t => t.leagueId === leagueId).length;
+                const teamId = crypto.randomUUID();
+                const newTeam = { id: teamId, name: teamName.trim(), leagueId, logoUrl: `https://placehold.co/100x100/A0A0A0/FFF?text=${teamsInLeague + 1}` };
+                try {
+                    await setDoc(doc(db, `artifacts/${appId}/public/data/teams`, teamId), newTeam);
+                    showMessage(`Equipo "${teamName.trim()}" añadido con éxito.`);
+                } catch (e) {
+                    console.error("Error adding new team:", e);
+                    showMessage("Error al añadir el equipo.");
+                }
+                setIsLoading(false);
+            };
+
+            const handleDeleteTournament = async () => {
+                if (!selectedTournamentId) { showMessage("Por favor, selecciona un torneo para eliminar."); return; }
+                if (confirm(`¿Estás seguro de que quieres eliminar el torneo '${tournaments.find(t => t.id === selectedTournamentId)?.name}' y TODOS sus datos? Esta acción es irreversible.`)) {
+                    setIsLoading(true);
+                    const { db } = window.firebaseApp;
+                    const { collection, query, where, getDocs, doc, deleteDoc } = window.firebaseModules;
+                    try {
+                        const leaguesQuery = query(collection(db, `artifacts/${appId}/public/data/leagues`), where("tournamentId", "==", selectedTournamentId));
+                        const leaguesSnapshot = await getDocs(leaguesQuery);
+                        const leagueIds = leaguesSnapshot.docs.map(d => d.id);
+                        if (leagueIds.length > 0) {
+                            const teamsQuery = query(collection(db, `artifacts/${appId}/public/data/teams`), where("leagueId", "in", leagueIds));
+                            const teamsSnapshot = await getDocs(teamsQuery);
+                            const teamIds = teamsSnapshot.docs.map(d => d.id);
+                            if (teamIds.length > 0) {
+                                const playersQuery = query(collection(db, `artifacts/${appId}/public/data/players`), where("teamId", "in", teamIds));
+                                const playersSnapshot = await getDocs(playersQuery);
+                                await Promise.all(playersSnapshot.docs.map(d => deleteDoc(d.ref)));
+                            }
+                            await Promise.all(teamsSnapshot.docs.map(d => deleteDoc(d.ref)));
+                            const matchesQuery = query(collection(db, `artifacts/${appId}/public/data/matches`), where("leagueId", "in", leagueIds));
+                            const matchesSnapshot = await getDocs(matchesQuery);
+                            await Promise.all(matchesSnapshot.docs.map(d => deleteDoc(d.ref)));
+                        }
+                        await Promise.all(leaguesSnapshot.docs.map(d => deleteDoc(d.ref)));
+                        await deleteDoc(doc(db, `artifacts/${appId}/public/data/tournaments`, selectedTournamentId));
+                        showMessage("Torneo eliminado con éxito.");
+                    } catch (e) {
+                        console.error("Error deleting tournament:", e);
+                        showMessage("Error al eliminar el torneo.");
+                    } finally {
+                        setIsLoading(false);
+                    }
+                }
+            };
+
+            const handleDeleteSchedule = async (visibleLeagueIds) => {
+                if (confirm("¿Estás seguro de que quieres borrar TODO el calendario para el torneo actual? Esta acción no se puede deshacer.")) {
+                    if (!user || !appId || visibleLeagueIds.length === 0) return;
+                    setIsLoading(true);
+                    const { db } = window.firebaseApp;
+                    const { collection, getDocs, query, where, deleteDoc } = window.firebaseModules;
+                    try {
+                        const q = query(collection(db, `artifacts/${appId}/public/data/matches`), where("leagueId", "in", visibleLeagueIds));
+                        const existingMatches = await getDocs(q);
+                        await Promise.all(existingMatches.docs.map(matchDoc => deleteDoc(matchDoc.ref)));
+                        showMessage("Calendario del torneo actual borrado.");
+                    } catch (e) { console.error("Error deleting schedule:", e); showMessage("Error al borrar el calendario."); } 
+                    setIsLoading(false);
+                }
+            };
+
+            const createLeaguesAndTeams = async () => {
+                if (!user || !appId) return;
+                const tournamentName = prompt(`Introduce un nombre para el nuevo torneo de ${selectedSport}:`, `Torneo ${selectedSport} ${new Date().getFullYear()}`);
+                if (!tournamentName) return;
+                setIsLoading(true);
+                const { db } = window.firebaseApp;
+                const { collection, doc, setDoc } = window.firebaseModules;
+                const leagueNames = ['Grupos A Varonil', 'Grupos A Femenil', 'Grupos B Varonil', 'Grupos B Femenil'];
+                const tournamentId = crypto.randomUUID();
+                const newTournament = { id: tournamentId, name: tournamentName, sport: selectedSport, createdAt: new Date().toISOString() };
+                try {
+                    await setDoc(doc(db, `artifacts/${appId}/public/data/tournaments`, tournamentId), newTournament);
+                    for (const name of leagueNames) {
+                        const leagueId = crypto.randomUUID();
+                        await setDoc(doc(db, `artifacts/${appId}/public/data/leagues`, leagueId), { id: leagueId, name, sport: selectedSport, tournamentId });
+                        const teamsInLeague = 4;
+                        for (let i = 1; i <= teamsInLeague; i++) {
+                            const teamName = `Equipo ${i}`;
+                            const teamId = crypto.randomUUID();
+                            await setDoc(doc(db, `artifacts/${appId}/public/data/teams`, teamId), { id: teamId, name: teamName, leagueId, logoUrl: `https://placehold.co/100x100/A0A0A0/FFF?text=${i}` });
+                        }
+                    }
+                    showMessage(`Torneo "${tournamentName}" creado con éxito.`);
+                } catch (e) { console.error("Error creating tournament:", e); showMessage("Error al crear el torneo."); }
+                setIsLoading(false);
+            };
+
+            const generateSchedule = async (visibleLeagues, visibleTeams, isInitial) => {
+                if (isInitial && !scheduleStartDate) { showMessage("Selecciona una fecha de inicio para el calendario base."); return; }
+                if (!isInitial && !scheduleEndDate) { showMessage("Selecciona una fecha de fin para extender el calendario."); return; }
+                setIsLoading(true);
+                const { db } = window.firebaseApp;
+                const { collection, doc, setDoc, getDocs, query, where, deleteDoc } = window.firebaseModules;
+                const matchesRef = collection(db, `artifacts/${appId}/public/data/matches`);
+                const newMatches = [];
+                const leaguesWithoutDay = visibleLeagues.filter(l => l.matchDay == null).map(l => l.name).join(', ');
+                if (leaguesWithoutDay) showMessage(`Ligas ignoradas por no tener día asignado: ${leaguesWithoutDay}`);
+                try {
+                    const visibleLeagueIds = visibleLeagues.map(l => l.id);
+                    if (isInitial) {
+                        const q = query(matchesRef, where("leagueId", "in", visibleLeagueIds));
+                        const existingMatches = await getDocs(q);
+                        await Promise.all(existingMatches.docs.map(matchDoc => deleteDoc(matchDoc.ref)));
+                    }
+                    let lastMatchDate = null;
+                    if (!isInitial) {
+                        const q = query(matchesRef, where("leagueId", "in", visibleLeagueIds));
+                        const existingMatches = await getDocs(q);
+                        if (!existingMatches.empty) {
+                            const dates = existingMatches.docs.map(d => new Date(d.data().date));
+                            lastMatchDate = new Date(Math.max.apply(null, dates));
+                        }
+                    }
+                    const startDate = lastMatchDate ? new Date(lastMatchDate) : new Date(scheduleStartDate);
+                    if(!lastMatchDate) startDate.setMinutes(startDate.getMinutes() + startDate.getTimezoneOffset());
+                    const endDate = isInitial ? null : new Date(scheduleEndDate);
+                    if(endDate) endDate.setMinutes(endDate.getMinutes() + endDate.getTimezoneOffset());
+
+                    visibleLeagues.forEach(league => {
+                        if (league.matchDay == null) return;
+                        let leagueTeams = visibleTeams.filter(team => team.leagueId === league.id);
+                        if (leagueTeams.length < 2) return;
+                        if (leagueTeams.length % 2 !== 0) leagueTeams.push({ id: 'bye', name: 'Descanso' });
+                        const numRounds = leagueTeams.length - 1;
+                        const roundsToGenerate = isInitial ? 2 : 10; 
+                        let currentRoundOffset = 0;
+                        if (!isInitial && lastMatchDate) {
+                           const allMatchesForLeague = matches.filter(m => m.leagueId === league.id).sort((a,b) => new Date(a.date) - new Date(b.date));
+                           if(allMatchesForLeague.length > 0) {
+                               const roundsPlayed = Math.ceil(allMatchesForLeague.length / (leagueTeams.length / 2));
+                               currentRoundOffset = roundsPlayed;
+                           }
+                        }
+                        for (let leg = 0; leg < roundsToGenerate; leg++) {
+                            let roundTeams = [...leagueTeams];
+                            const legOffset = isInitial ? leg : currentRoundOffset + leg;
+                            for (let round = 0; round < numRounds; round++) {
+                                let date = new Date(startDate);
+                                if(isInitial) {
+                                    const dayOffset = (league.matchDay - date.getDay() + 7) % 7;
+                                    date.setDate(date.getDate() + dayOffset + (round * 7) + (leg * numRounds * 7));
+                                } else {
+                                    const baseDate = new Date(lastMatchDate);
+                                    const dayOffset = (league.matchDay - baseDate.getDay() + 7) % 7;
+                                    date = new Date(baseDate.setDate(baseDate.getDate() + dayOffset + 7 + (round * 7) + (leg * numRounds * 7) ));
+                                }
+                                if (endDate && date > endDate) continue;
+                                for (let i = 0; i < roundTeams.length / 2; i++) {
+                                    const home = (legOffset % 2 === 0) ? roundTeams[i] : roundTeams[roundTeams.length - 1 - i];
+                                    const away = (legOffset % 2 === 0) ? roundTeams[roundTeams.length - 1 - i] : roundTeams[i];
+                                    if (home.id !== 'bye' && away.id !== 'bye') {
+                                        newMatches.push({ id: crypto.randomUUID(), leagueId: league.id, homeTeamId: home.id, awayTeamId: away.id, date: date.toISOString().split('T')[0], scoreHome: null, scoreAway: null, scorers: [] });
+                                    }
+                                }
+                                roundTeams.splice(1, 0, roundTeams.pop());
+                            }
+                        }
+                    });
+                    if(newMatches.length > 0) {
+                        await Promise.all(newMatches.map(match => setDoc(doc(matchesRef, match.id), match)));
+                        showMessage(isInitial ? "Calendario base generado." : "Calendario extendido.");
+                    } else {
+                        showMessage("No se generaron nuevos partidos. La fecha de fin podría ser demasiado temprana.");
+                    }
+                } catch (e) { console.error("Error generating schedule:", e); showMessage("Error al generar el calendario."); } 
+                setIsLoading(false);
+            };
+
+            const getLeagueName = useCallback((leagueId) => leagues.find(l => l.id === leagueId)?.name || 'Liga Desconocida', [leagues]);
+            const getPlayersByTeam = useCallback((teamId) => players.filter(p => p.teamId === teamId), [players]);
+
+            const calculateStandings = useCallback((leagueId, visTeams, visMatches) => {
+                const leagueTeams = visTeams.filter(t => t.leagueId === leagueId);
+                const leagueMatches = visMatches.filter(m => m.leagueId === leagueId && m.scoreHome !== null);
+                const standingsMap = leagueTeams.reduce((acc, team) => ({ 
+                    ...acc, 
+                    [team.id]: { 
+                        id: team.id, // FIX CLAVE: Incluimos el ID para que el clic funcione
+                        teamName: team.name, 
+                        logoUrl: team.logoUrl, 
+                        played: 0, 
+                        wins: 0, 
+                        draws: 0, 
+                        losses: 0, 
+                        points: 0, 
+                        goalsFor: 0, 
+                        goalsAgainst: 0, 
+                        goalDifference: 0 
+                    } 
+                }), {});
+
+                leagueMatches.forEach(match => {
+                    const home = standingsMap[match.homeTeamId], away = standingsMap[match.awayTeamId];
+                    if (!home || !away) return;
+                    home.played++; away.played++;
+                    home.goalsFor += match.scoreHome; home.goalsAgainst += match.scoreAway;
+                    away.goalsFor += match.scoreAway; away.goalsAgainst += match.scoreHome;
+                    if (match.scoreHome > match.scoreAway) { home.wins++; away.losses++; home.points += 3; }
+                    else if (match.scoreHome < match.scoreAway) { away.wins++; home.losses++; away.points += 3; }
+                    else { home.draws++; away.draws++; home.points++; away.points++; }
+                    home.goalDifference = home.goalsFor - home.goalsAgainst;
+                    away.goalDifference = away.goalsFor - away.goalsAgainst;
+                });
+                return Object.values(standingsMap).sort((a, b) => b.points - a.points || b.goalDifference - a.goalDifference);
+            }, []);
+
+            const calculateTopScorers = useCallback((leagueId, visMatches, visPlayers, visTeams) => {
+                const scorersMap = visMatches.filter(m => m.leagueId === leagueId).flatMap(m => m.scorers)
+                    .reduce((acc, scorer) => {
+                        const player = visPlayers.find(p => p.id === scorer.playerId);
+                        if (player) {
+                            const team = visTeams.find(t => t.id === player.teamId);
+                            if(team) {
+                                acc[scorer.playerId] = acc[scorer.playerId] || { playerName: player.name, teamName: team.name, logoUrl: team.logoUrl, goals: 0 };
+                                acc[scorer.playerId].goals += scorer.count;
+                            }
+                        }
+                        return acc;
+                    }, {});
+                return Object.values(scorersMap).sort((a, b) => b.goals - a.goals);
+            }, []);
+
+            const svgToPngDataUrl = (svgUrl) => {
+                return new Promise((resolve, reject) => {
+                    const img = new Image();
+                    img.crossOrigin = 'anonymous';
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        ctx.drawImage(img, 0, 0);
+                        const pngDataUrl = canvas.toDataURL('image/png');
+                        resolve({ dataUrl: pngDataUrl, format: 'png' });
+                    };
+                    img.onerror = reject;
+                    img.src = svgUrl;
+                });
+            };
+
+            const urlToB64 = async (url) => {
+                if (!url) return null;
+                try {
+                    const res = await fetch(url);
+                    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+                    const contentType = res.headers.get('content-type');
+                    if (!contentType || !contentType.startsWith('image/')) throw new Error(`Invalid content-type: ${contentType}`);
+                    if (contentType.includes('svg')) return await svgToPngDataUrl(url);
+                    else {
+                        const blob = await res.blob();
+                        return await new Promise((resolve, reject) => {
+                            const reader = new FileReader();
+                            reader.onloadend = () => resolve({ dataUrl: reader.result, format: contentType.split('/')[1] });
+                            reader.onerror = reject;
+                            reader.readAsDataURL(blob);
+                        });
+                    }
+                } catch (e) {
+                    console.error(`Error fetching or converting image from ${url}:`, e);
+                    return null;
+                }
+            };
+
+            const generateUpcomingMatchesPdf = async (visMatches) => {
+                if (!upcomingMatchesDate) { showMessage("Por favor, selecciona una fecha para el reporte."); return; }
+                const { jsPDF } = window.jspdf; const doc = new jsPDF(); const pageCenter = doc.internal.pageSize.getWidth() / 2; let y = 20;
+                const tournamentName = tournaments.find(t => t.id === selectedTournamentId)?.name || 'TORNEO';
+                doc.setFontSize(18).text(`PRÓXIMOS PARTIDOS - ${tournamentName.toUpperCase()}`, pageCenter, y, { align: 'center' });
+                y += 8; doc.setFontSize(14).text(`FECHA: ${upcomingMatchesDate}`, pageCenter, y, { align: 'center' }); y += 15;
+                const filteredMatches = visMatches.filter(match => match.date === upcomingMatchesDate);
+                if (filteredMatches.length === 0) {
+                    doc.setFontSize(12).text("No hay partidos programados para esta fecha.", pageCenter, y, { align: 'center' });
+                    doc.save(`proximos_partidos_${upcomingMatchesDate}.pdf`); return;
+                }
+                const matchesByLeague = filteredMatches.reduce((acc, match) => { (acc[match.leagueId] = acc[match.leagueId] || []).push(match); return acc; }, {});
+                const sortedLeagueIds = Object.keys(matchesByLeague).sort((a, b) => sortLeagues({name: getLeagueName(a)}, {name: getLeagueName(b)}));
+                for (const leagueId of sortedLeagueIds) {
+                    const leagueName = getLeagueName(leagueId);
+                    const leagueMatches = matchesByLeague[leagueId];
+                    if (y > 250) { doc.addPage(); y = 20; }
+                    doc.setFontSize(12).setFont(undefined, 'bold').text(leagueName, 14, y); y += 8;
+                    for (const match of leagueMatches) {
+                        if (y > 270) { doc.addPage(); y = 20; }
+                        const [homeLogoResult, awayLogoResult] = await Promise.all([urlToB64(getTeamLogo(match.homeTeamId)), urlToB64(getTeamLogo(match.awayTeamId))]);
+                        const logoSize = 8; const verticalAlign = y - (logoSize / 2) - 1;
+                        doc.setFontSize(10).setFont(undefined, 'normal');
+                        if (homeLogoResult) doc.addImage(homeLogoResult.dataUrl, homeLogoResult.format.toUpperCase(), 20, verticalAlign, logoSize, logoSize);
+                        doc.text(getTeamName(match.homeTeamId), 32, y);
+                        doc.text('vs', pageCenter, y, { align: 'center' });
+                        doc.text(getTeamName(match.awayTeamId), 178, y, { align: 'right' });
+                        if (awayLogoResult) doc.addImage(awayLogoResult.dataUrl, awayLogoResult.format.toUpperCase(), 180, verticalAlign, logoSize, logoSize);
+                        y += 12;
+                    }
+                    y += 5;
+                }
+                doc.save(`proximos_partidos_${upcomingMatchesDate}.pdf`);
+                showMessage("PDF de Próximos Partidos generado.");
+            };
+
+            const generateRefereeSheetPdf = async (visMatches, visPlayers) => {
+                if (!refereeMatchDate) { showMessage("Selecciona una fecha para la cédula."); return; }
+                const { jsPDF } = window.jspdf; const doc = new jsPDF(); const pageCenter = doc.internal.pageSize.getWidth() / 2;
+                const filteredMatches = visMatches.filter(match => match.date === refereeMatchDate).sort((a, b) => sortLeagues({name: getLeagueName(a.leagueId)}, {name: getLeagueName(b.leagueId)}));
+                if (filteredMatches.length === 0) { showMessage("No hay partidos para la fecha seleccionada."); return; }
+                let matchCount = 0;
+                for (const match of filteredMatches) {
+                    const isFirstOnPage = matchCount % 2 === 0;
+                    if (matchCount > 0 && isFirstOnPage) doc.addPage();
+                    const yOffset = isFirstOnPage ? 15 : 150; let y = yOffset;
+                    const [homeLogoResult, awayLogoResult] = await Promise.all([urlToB64(getTeamLogo(match.homeTeamId)), urlToB64(getTeamLogo(match.awayTeamId))]);
+                    doc.setFontSize(16).text("Cédula de Partido", pageCenter, y, { align: 'center' }); y += 8;
+                    doc.setFontSize(10).text(`Liga: ${getLeagueName(match.leagueId)}`, 15, y); doc.text(`Fecha: ${match.date}`, 195, y, { align: 'right' }); y += 5;
+                    doc.setLineWidth(0.5).line(15, y, 195, y); y += 8;
+                    if (homeLogoResult) doc.addImage(homeLogoResult.dataUrl, homeLogoResult.format.toUpperCase(), 45, y, 12, 12);
+                    doc.setFontSize(11).text(getTeamName(match.homeTeamId), 60, y + 8);
+                    doc.setFontSize(11).text("VS", pageCenter, y + 8, { align: 'center' });
+                    if (awayLogoResult) doc.addImage(awayLogoResult.dataUrl, awayLogoResult.format.toUpperCase(), 153, y, 12, 12);
+                    doc.setFontSize(11).text(getTeamName(match.awayTeamId), 148, y + 8, { align: 'right' }); y += 20;
+                    const homeTeamPlayers = getPlayersByTeam(match.homeTeamId).filter(p => visPlayers.some(vp => vp.id === p.id)).map(p => [p.name, '']);
+                    const awayTeamPlayers = getPlayersByTeam(match.awayTeamId).filter(p => visPlayers.some(vp => vp.id === p.id)).map(p => [p.name, '']);
+                    doc.autoTable({ startY: y, head: [['Jugadores Local', 'N']], body: homeTeamPlayers, theme: 'grid', margin: { left: 15, right: 110 }, styles: { fontSize: 8, cellPadding: 1 }, headStyles: { fillColor: [22, 160, 133], fontSize: 9 }, columnStyles: { 1: { cellWidth: 10 } } });
+                    doc.autoTable({ startY: y, head: [['Jugadores Visitante', 'N']], body: awayTeamPlayers, theme: 'grid', margin: { left: 110, right: 15 }, styles: { fontSize: 8, cellPadding: 1 }, headStyles: { fillColor: [22, 160, 133], fontSize: 9 }, columnStyles: { 1: { cellWidth: 10 } } });
+                    y = doc.autoTable.previous.finalY + 7;
+                    doc.setFontSize(9).text("Marcador Final:", 15, y); doc.rect(45, y - 3, 20, 7); doc.text("Observaciones:", 75, y); doc.rect(100, y - 3, 95, 12); y += 15;
+                    doc.line(20, y, 80, y); doc.setFontSize(9).text("Firma Árbitro", 40, y + 4);
+                    doc.line(120, y, 180, y); doc.setFontSize(9).text("Firma Capitán", 140, y + 4);
+                    matchCount++;
+                }
+                doc.save(`cedula_arbitro_${refereeMatchDate}.pdf`);
+                showMessage("Cédula de Árbitro generada.");
+            };
+
+            const generateStandingsAndTopScorersPdf = async (visLeagues, visTeams, visMatches, visPlayers) => {
+                const { jsPDF } = window.jspdf; const doc = new jsPDF(); let y = 10;
+                doc.setFontSize(18).text(`Reporte de Torneo: ${tournaments.find(t => t.id === selectedTournamentId)?.name || ''}`, 10, y); y += 15;
+                const allStandings = visLeagues.flatMap(l => calculateStandings(l.id, visTeams, visMatches));
+                const allScorers = visLeagues.flatMap(l => calculateTopScorers(l.id, visMatches, visPlayers, visTeams));
+                const allLogoUrls = [...new Set([...allStandings.map(t => t.logoUrl), ...allScorers.map(s => s.logoUrl)])].filter(Boolean);
+                const logoResults = await Promise.all(allLogoUrls.map(url => urlToB64(url)));
+                const logoMap = allLogoUrls.reduce((map, url, index) => { map[url] = logoResults[index]; return map; }, {});
+                for (const league of visLeagues.sort(sortLeagues)) {
+                    if (y > 250) { doc.addPage(); y = 15; }
+                    doc.setFontSize(16).text(`Liga: ${league.name}`, 14, y); y += 10;
+                    doc.setFontSize(14).text("Clasificación:", 14, y); y += 7;
+                    const standings = calculateStandings(league.id, visTeams, visMatches);
+                    if (standings.length > 0) {
+                        doc.autoTable({
+                            startY: y, head: [['', 'Equipo', 'PJ', 'G', 'E', 'P', 'GF', 'GC', 'DG', 'Pts']],
+                            body: standings.map(t => ['', t.teamName, t.played, t.wins, t.draws, t.losses, t.goalsFor, t.goalsAgainst, t.goalDifference, t.points]),
+                            theme: 'grid', columnStyles: { 0: { cellWidth: 12 } },
+                            didDrawCell: (data) => {
+                                if (data.section === 'body' && data.column.index === 0) {
+                                    const team = standings[data.row.index]; const logoResult = logoMap[team.logoUrl];
+                                    if (logoResult) doc.addImage(logoResult.dataUrl, logoResult.format.toUpperCase(), data.cell.x + 2, data.cell.y + 2, 8, 8);
+                                }
+                            }
+                        });
+                        y = doc.autoTable.previous.finalY + 10;
+                    } else { doc.text("No hay datos.", 14, y); y += 10; }
+                    if (y > 250) { doc.addPage(); y = 15; }
+                    doc.setFontSize(14).text("Tabla de Anotadores:", 14, y); y += 7;
+                    const scorers = calculateTopScorers(league.id, visMatches, visPlayers, visTeams);
+                    if (scorers.length > 0) {
+                        doc.autoTable({
+                            startY: y, head: [['', 'Jugador', 'Equipo', 'Goles']],
+                            body: scorers.map(s => ['', s.playerName, s.teamName, s.goals]),
+                            theme: 'grid', columnStyles: { 0: { cellWidth: 12 } },
+                            didDrawCell: (data) => {
+                                if (data.section === 'body' && data.column.index === 0) {
+                                    const scorer = scorers[data.row.index]; const logoResult = logoMap[scorer.logoUrl];
+                                    if (logoResult) doc.addImage(logoResult.dataUrl, logoResult.format.toUpperCase(), data.cell.x + 2, data.cell.y + 2, 8, 8);
+                                }
+                            }
+                        });
+                        y = doc.autoTable.previous.finalY + 10;
+                    } else { doc.text("No hay datos.", 14, y); y += 10; }
+                }
+                doc.save(`reporte_torneo_${selectedTournamentId}.pdf`);
+                showMessage("PDF de Reporte de Torneo generado.");
+            };
+
+            const visibleLeagues = useMemo(() => leagues.filter(l => l.tournamentId === selectedTournamentId), [leagues, selectedTournamentId]);
+            const visibleLeagueIds = useMemo(() => visibleLeagues.map(l => l.id), [visibleLeagues]);
+            const visibleTeams = useMemo(() => teams.filter(t => visibleLeagueIds.includes(t.leagueId)), [teams, visibleLeagueIds]);
+            const visibleTeamIds = useMemo(() => visibleTeams.map(t => t.id), [visibleTeams]);
+            const visiblePlayers = useMemo(() => players.filter(p => visibleTeamIds.includes(p.teamId)), [players, visibleTeamIds]);
+            const visibleMatches = useMemo(() => matches.filter(m => visibleLeagueIds.includes(m.leagueId)), [matches, visibleLeagueIds]);
+
+
+            const AdminPanel = ({ 
+                tournaments, selectedTournamentId, setSelectedTournamentId, handleDeleteTournament,
+                selectedSport, setSelectedSport, createLeaguesAndTeams,
+                visibleLeagues, visibleTeams, visiblePlayers, visibleMatches, visibleLeagueIds,
+                appId, showMessage, handleMatchDayChange, handleEditTeam, handleOpenAddPlayersModal, handleAddNewTeam,
+                handleDeleteSchedule, generateSchedule, scheduleStartDate, setScheduleStartDate, scheduleEndDate, setScheduleEndDate,
+                upcomingMatchesDate, setUpcomingMatchesDate, generateUpcomingMatchesPdf,
+                generateStandingsAndTopScorersPdf,
+                refereeMatchDate, setRefereeMatchDate, generateRefereeSheetPdf,
+                selectedDateFilter, setSelectedDateFilter, selectedLeagueFilter, setSelectedLeagueFilter,
+                getLeagueName, getTeamName, getPlayersByTeam
+            }) => (
+                <div className="p-4 md:p-8 space-y-8 max-w-7xl mx-auto">
+                    <div className="flex justify-between items-center flex-wrap gap-4">
+                        <h2 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-[#101097] to-[#2a2ad9] dark:from-blue-300 dark:to-blue-500">Panel de Administración</h2>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div className="card p-8 space-y-4">
+                            <h3 className="text-xl font-bold text-gray-800 dark:text-white flex items-center border-b border-gray-100 dark:border-gray-700 pb-3">Seleccionar Torneo</h3>
+                            {tournaments.length > 0 ? (
+                                <div className="flex flex-col md:flex-row items-stretch md:items-center gap-4">
+                                    <select value={selectedTournamentId} onChange={(e) => setSelectedTournamentId(e.target.value)} className="input-modern flex-1">
+                                        {tournaments.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                                    </select>
+                                    <button onClick={handleDeleteTournament} className="btn-danger flex items-center justify-center"><TrashIcon className="w-5 h-5 mr-2" />Eliminar</button>
+                                </div>
+                            ) : (
+                                <p className="text-center text-gray-500 dark:text-gray-400 py-8 bg-gray-50 dark:bg-gray-900/50 rounded-xl">No hay torneos creados. Crea uno para empezar.</p>
+                            )}
+                        </div>
+
+                        <div className="card p-8 space-y-4">
+                            <h3 className="text-xl font-bold text-gray-800 dark:text-white flex items-center border-b border-gray-100 dark:border-gray-700 pb-3">Crear Nuevo Torneo</h3>
+                            <div className="flex flex-col md:flex-row items-stretch md:items-center gap-4">
+                                <div className="relative flex-grow">
+                                    <select id="sport-select" value={selectedSport} onChange={(e) => setSelectedSport(e.target.value)} className="input-modern pl-12 appearance-none cursor-pointer">
+                                        {['Fútbol', 'Básquetbol', 'Voleibol'].map(sport => <option key={sport} value={sport}>{sport}</option>)}
+                                    </select>
+                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-2xl"><SportIcon sport={selectedSport} /></div>
+                                </div>
+                                <button onClick={createLeaguesAndTeams} className="btn-primary flex items-center justify-center"><PlusIcon className="w-5 h-5 mr-2" />Crear Torneo</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="card p-8 space-y-4">
+                        <h3 className="text-xl font-bold text-gray-800 dark:text-white flex items-center border-b border-gray-100 dark:border-gray-700 pb-3">Gestión del Torneo Actual</h3>
+                        {visibleLeagues.length === 0 ? <p className="text-center text-gray-500 dark:text-gray-400 py-4">No hay ligas en este torneo.</p> : visibleLeagues.map(league => <LeagueCard key={league.id} league={league} teams={visibleTeams.filter(t => t.leagueId === league.id)} players={visiblePlayers} appId={appId} db={window.firebaseApp.db} showMessage={showMessage} onMatchDayChange={handleMatchDayChange} onEditTeam={handleEditTeam} onAddPlayers={handleOpenAddPlayersModal} onAddNewTeam={handleAddNewTeam} />)}
+                    </div>
+
+                    <div className="card p-8 space-y-4">
+                        <h3 className="text-xl font-bold text-gray-800 dark:text-white flex items-center border-b border-gray-100 dark:border-gray-700 pb-3">Generar Calendario</h3>
+                        {visibleMatches.length > 0 ? (
+                            <div className="space-y-4">
+                                <p className="text-gray-600 dark:text-gray-300 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-300 p-4 rounded-xl text-sm">Ya existe un calendario. Puedes extenderlo hasta una nueva fecha o borrarlo para empezar de nuevo.</p>
+                                <div className="flex flex-col md:flex-row items-stretch md:items-center gap-4">
+                                    <label className="text-sm font-medium text-gray-600 dark:text-gray-300">Extender hasta:</label>
+                                    <input type="date" value={scheduleEndDate} onChange={(e) => setScheduleEndDate(e.target.value)} className="input-modern flex-1" />
+                                    <button onClick={() => generateSchedule(visibleLeagues, visibleTeams, false)} className="btn-primary flex items-center justify-center"><PlusIcon className="w-5 h-5 mr-2" />Extender</button>
+                                </div>
+                                <div className="border-t border-gray-100 dark:border-gray-700 pt-4">
+                                    <button onClick={() => handleDeleteSchedule(visibleLeagueIds)} className="btn-danger flex items-center justify-center"><TrashIcon className="w-5 h-5 mr-2" />Borrar Calendario Actual</button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div>
+                                <p className="text-gray-600 dark:text-gray-300 mb-4">Selecciona una fecha de inicio y genera el calendario para el torneo actual.</p>
+                                <div className="flex flex-col md:flex-row items-stretch md:items-center gap-4">
+                                    <label className="text-sm font-medium text-gray-600 dark:text-gray-300">Fecha de Inicio:</label>
+                                    <input type="date" value={scheduleStartDate} onChange={(e) => setScheduleStartDate(e.target.value)} className="input-modern flex-1" />
+                                    <button onClick={() => generateSchedule(visibleLeagues, visibleTeams, true)} className="btn-primary flex items-center justify-center"><CalendarIcon className="w-5 h-5 mr-2" />Generar</button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div className="card p-8 space-y-4">
+                            <h3 className="text-xl font-bold text-gray-800 dark:text-white flex items-center border-b border-gray-100 dark:border-gray-700 pb-3">Informes del Torneo</h3>
+                            <div className="space-y-6">
+                                <div>
+                                    <p className="text-sm text-gray-600 dark:text-gray-300 mb-3 font-medium">Reporte de próximos partidos:</p>
+                                    <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
+                                        <input type="date" value={upcomingMatchesDate} onChange={(e) => setUpcomingMatchesDate(e.target.value)} className="input-modern flex-1" />
+                                        <button onClick={() => generateUpcomingMatchesPdf(visibleMatches)} className="btn-primary whitespace-nowrap">Generar PDF</button>
+                                    </div>
+                                </div>
+                                <div className="border-t border-gray-100 dark:border-gray-700 pt-6">
+                                    <p className="text-sm text-gray-600 dark:text-gray-300 mb-3 font-medium">Reporte completo de clasificación y goleo:</p>
+                                    <button onClick={() => generateStandingsAndTopScorersPdf(visibleLeagues, visibleTeams, visibleMatches, visiblePlayers)} className="btn-primary w-full">PDF Clasificación y Goleo</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="card p-8 space-y-4">
+                            <h3 className="text-xl font-bold text-gray-800 dark:text-white flex items-center border-b border-gray-100 dark:border-gray-700 pb-3">Cédula de Partidos</h3>
+                            <p className="text-sm text-gray-600 dark:text-gray-300">Generar una cédula para una fecha específica del torneo actual.</p>
+                            <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
+                                <input type="date" value={refereeMatchDate} onChange={(e) => setRefereeMatchDate(e.target.value)} className="input-modern flex-1" />
+                                <button onClick={() => generateRefereeSheetPdf(visibleMatches, visiblePlayers)} className="btn-primary whitespace-nowrap">Generar Cédula</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="card p-8 space-y-4">
+                        <h3 className="text-xl font-bold text-gray-800 dark:text-white flex items-center border-b border-gray-100 dark:border-gray-700 pb-3">Registro de Partidos</h3>
+                        <div className="flex flex-col md:flex-row items-stretch md:items-center gap-4 mb-6">
+                            <input type="date" value={selectedDateFilter} onChange={(e) => setSelectedDateFilter(e.target.value)} className="input-modern flex-1" />
+                            <select value={selectedLeagueFilter} onChange={(e) => setSelectedLeagueFilter(e.target.value)} className="input-modern flex-1">
+                                <option value="">Todas las Ligas</option>
+                                {visibleLeagues.sort(sortLeagues).map(league => <option key={league.id} value={league.id}>{league.name}</option>)}
+                            </select>
+                        </div>
+                        <MatchesView matches={visibleMatches} leagues={visibleLeagues} teams={visibleTeams} players={visiblePlayers} getLeagueName={getLeagueName} getTeamName={getTeamName} getPlayersByTeam={getPlayersByTeam} appId={appId} db={window.firebaseApp.db} showMessage={showMessage} selectedDateFilter={selectedDateFilter} selectedLeagueFilter={selectedLeagueFilter} />
+                    </div>
+                </div>
+            );
+
+            const StandingsView = ({
+                tournaments, selectedTournamentId, setSelectedTournamentId,
+                visibleLeagues, visibleTeams, visibleMatches, visiblePlayers,
+                calculateStandings, calculateTopScorers, getTeamName, getTeamLogo, handleMatchClick, handleTeamClick,
+                selectedStandingsLeagueFilter, setSelectedStandingsLeagueFilter
+            }) => (
+                <div className="p-4 md:p-8 space-y-8 max-w-7xl mx-auto">
+                    <div className="flex justify-between items-center flex-wrap gap-4">
+                        <h2 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-[#101097] to-[#2a2ad9] dark:from-blue-300 dark:to-blue-500">Clasificaciones y Anotadores</h2>
+                    </div>
+                    
+                    {tournaments.length > 0 ? (
+                        <div className="card p-2 flex items-center space-x-2">
+                            <select value={selectedTournamentId} onChange={(e) => setSelectedTournamentId(e.target.value)} className="bg-transparent p-3 font-semibold text-gray-800 dark:text-white focus:outline-none cursor-pointer w-full">
+                                {tournaments.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                            </select>
+                        </div>
+                    ) : (
+                        <p className="text-center text-gray-500 dark:text-gray-400 py-8 bg-white dark:bg-gray-800/60 rounded-2xl shadow-sm">No hay torneos creados. Pídele a un administrador que cree uno.</p>
+                    )}
+
+                    {tournaments.length > 0 && visibleLeagues.length === 0 && <p className="text-center text-yellow-600 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-900/30 p-4 rounded-xl shadow-sm">No hay ligas en el torneo seleccionado.</p>}
+                    
+                    {visibleLeagues.length > 0 && (
+                        <div className="card p-2 flex items-center space-x-2">
+                            <select value={selectedStandingsLeagueFilter} onChange={(e) => setSelectedStandingsLeagueFilter(e.target.value)} className="bg-transparent p-3 font-semibold text-gray-800 dark:text-white focus:outline-none cursor-pointer w-full">
+                                <option value="">Ver Todas las Ligas</option>
+                                {visibleLeagues.sort(sortLeagues).map(league => <option key={league.id} value={league.id}>{league.name}</option>)}
+                            </select>
+                        </div>
+                    )}
+                    
+                    {visibleLeagues.filter(l => selectedStandingsLeagueFilter ? l.id === selectedStandingsLeagueFilter : true).sort(sortLeagues).map(league => (
+                        <div key={league.id} className="card p-6 md:p-8 space-y-6 animate-fade-in-up">
+                            <div className="flex items-center border-b border-gray-100 dark:border-gray-700 pb-4">
+                                <h3 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
+                                    <SportIcon sport={league.sport} /> {league.name}
+                                </h3>
+                                {league.sport && <span className="ml-auto text-sm font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full">{league.sport}</span>}
+                            </div>
+                            <div className="flex flex-col lg:flex-row lg:space-x-8 space-y-8 lg:space-y-0">
+                                <div className="flex-1 space-y-8">
+                                    <div>
+                                        <h4 className="text-lg font-bold text-gray-700 dark:text-gray-200 mb-3 flex items-center"><TrophyIcon className="w-5 h-5 mr-2 text-yellow-500" /> Clasificación</h4>
+                                        <StandingsTable standings={calculateStandings(league.id, visibleTeams, visibleMatches)} onTeamClick={handleTeamClick} />
+                                    </div>
+                                    <div>
+                                        <h4 className="text-lg font-bold text-gray-700 dark:text-gray-200 mb-3 flex items-center"><CalendarIcon className="w-5 h-5 mr-2 text-[#101097]" /> Últimos Resultados</h4>
+                                        <ResultsList matches={visibleMatches.filter(m => m.leagueId === league.id)} getTeamName={getTeamName} getTeamLogo={getTeamLogo} onMatchClick={handleMatchClick} />
+                                    </div>
+                                </div>
+                                <div className="lg:w-1/3">
+                                    <h4 className="text-lg font-bold text-gray-700 dark:text-gray-200 mb-3 flex items-center"><TrophyIcon className="w-5 h-5 mr-2 text-red-500" /> Tabla de Anotadores</h4>
+                                    <TopScorersTable scorers={calculateTopScorers(league.id, visibleMatches, visiblePlayers, visibleTeams)} />
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            );
+
+            const renderView = () => {
+                if (isLoading && !isAuthReady) {
+                    return (
+                        <div className="flex flex-col items-center justify-center min-h-[80vh]">
+                            <div className="animate-spin rounded-full h-24 w-24 border-t-4 border-b-4 border-[#101097] dark:border-blue-400"></div>
+                            <p className="mt-6 text-[#101097] dark:text-blue-300 text-lg font-semibold tracking-widest uppercase">Cargando Datos...</p>
+                        </div>
+                    );
+                }
+                switch (view) {
+                    case 'standings': 
+                        return (
+                            <StandingsView 
+                                tournaments={tournaments}
+                                selectedTournamentId={selectedTournamentId}
+                                setSelectedTournamentId={setSelectedTournamentId}
+                                visibleLeagues={visibleLeagues}
+                                visibleTeams={visibleTeams}
+                                visibleMatches={visibleMatches}
+                                visiblePlayers={visiblePlayers}
+                                calculateStandings={calculateStandings}
+                                calculateTopScorers={calculateTopScorers}
+                                getTeamName={getTeamName}
+                                getTeamLogo={getTeamLogo}
+                                handleMatchClick={handleMatchClick}
+                                handleTeamClick={handleTeamClick}
+                                selectedStandingsLeagueFilter={selectedStandingsLeagueFilter}
+                                setSelectedStandingsLeagueFilter={setSelectedStandingsLeagueFilter}
+                            />
+                        );
+                    case 'admin': 
+                        return user ? (
+                            <AdminPanel 
+                                tournaments={tournaments}
+                                selectedTournamentId={selectedTournamentId}
+                                setSelectedTournamentId={setSelectedTournamentId}
+                                handleDeleteTournament={handleDeleteTournament}
+                                selectedSport={selectedSport}
+                                setSelectedSport={setSelectedSport}
+                                createLeaguesAndTeams={createLeaguesAndTeams}
+                                visibleLeagues={visibleLeagues}
+                                visibleTeams={visibleTeams}
+                                visiblePlayers={visiblePlayers}
+                                visibleMatches={visibleMatches}
+                                visibleLeagueIds={visibleLeagueIds}
+                                appId={appId}
+                                showMessage={showMessage}
+                                handleMatchDayChange={handleMatchDayChange}
+                                handleEditTeam={handleEditTeam}
+                                handleOpenAddPlayersModal={handleOpenAddPlayersModal}
+                                handleAddNewTeam={handleAddNewTeam}
+                                handleDeleteSchedule={handleDeleteSchedule}
+                                generateSchedule={generateSchedule}
+                                scheduleStartDate={scheduleStartDate}
+                                setScheduleStartDate={setScheduleStartDate}
+                                scheduleEndDate={scheduleEndDate}
+                                setScheduleEndDate={setScheduleEndDate}
+                                upcomingMatchesDate={upcomingMatchesDate}
+                                setUpcomingMatchesDate={setUpcomingMatchesDate}
+                                generateUpcomingMatchesPdf={generateUpcomingMatchesPdf}
+                                generateStandingsAndTopScorersPdf={generateStandingsAndTopScorersPdf}
+                                refereeMatchDate={refereeMatchDate}
+                                setRefereeMatchDate={setRefereeMatchDate}
+                                generateRefereeSheetPdf={generateRefereeSheetPdf}
+                                selectedDateFilter={selectedDateFilter}
+                                setSelectedDateFilter={setSelectedDateFilter}
+                                selectedLeagueFilter={selectedLeagueFilter}
+                                setSelectedLeagueFilter={setSelectedLeagueFilter}
+                                getLeagueName={getLeagueName}
+                                getTeamName={getTeamName}
+                                getPlayersByTeam={getPlayersByTeam}
+                            />
+                        ) : (
+                            <div className="flex items-center justify-center min-h-[80vh] p-4">
+                                <div className="card p-10 max-w-md w-full text-center animate-fade-in-up">
+                                    <div className="w-20 h-20 mx-auto mb-6 bg-indigo-50 dark:bg-indigo-900/30 rounded-full flex items-center justify-center">
+                                        <LockIcon className="w-10 h-10 text-[#101097] dark:text-blue-400" />
+                                    </div>
+                                    <h3 className="text-2xl font-bold mb-2 text-gray-900 dark:text-white">Acceso Restringido</h3>
+                                    <p className="text-gray-500 dark:text-gray-400 mb-8">Inicia sesión como administrador para gestionar los torneos.</p>
+                                    <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="input-modern mb-3" placeholder="Correo electrónico" />
+                                    <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') handleLogin(); }} className="input-modern mb-6" placeholder="Contraseña" />
+                                    <button onClick={handleLogin} className="btn-primary w-full">Ingresar</button>
+                                </div>
+                            </div>
+                        );
+                    default: 
+                        return <StandingsView 
+                                    tournaments={tournaments}
+                                    selectedTournamentId={selectedTournamentId}
+                                    setSelectedTournamentId={setSelectedTournamentId}
+                                    visibleLeagues={visibleLeagues}
+                                    visibleTeams={visibleTeams}
+                                    visibleMatches={visibleMatches}
+                                    visiblePlayers={visiblePlayers}
+                                    calculateStandings={calculateStandings}
+                                    calculateTopScorers={calculateTopScorers}
+                                    getTeamName={getTeamName}
+                                    getTeamLogo={getTeamLogo}
+                                    handleMatchClick={handleMatchClick}
+                                    handleTeamClick={handleTeamClick}
+                                    selectedStandingsLeagueFilter={selectedStandingsLeagueFilter}
+                                    setSelectedStandingsLeagueFilter={setSelectedStandingsLeagueFilter}
+                                />;
+                }
+            };
+
+            return (
+                <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white transition-colors duration-300">
+                    <nav className="bg-gradient-to-r from-[#101097] to-[#1a1a9c] dark:from-gray-900 dark:to-black shadow-xl sticky top-0 z-40 border-b border-white/10">
+                        <div className="flex flex-wrap justify-between items-center max-w-7xl mx-auto px-4 py-3 gap-2">
+                            <div className="flex items-center space-x-3">
+                                <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg">
+                                    <TrophyIcon className="w-6 h-6 text-[#101097]" />
+                                </div>
+                                <span className="text-white font-bold text-xl tracking-tight hidden sm:block">Ligas <span className="text-blue-300">La Salle</span></span>
+                            </div>
+                            <div className="flex items-center space-x-2 flex-wrap">
+                                <button onClick={() => setView('standings')} className={`nav-button ${view === 'standings' ? 'active' : ''}`}><TrophyIcon className="inline-block w-5 h-5 mr-2" />Clasificación</button>
+                                <button onClick={() => setView('admin')} className={`nav-button ${view === 'admin' ? 'active' : ''}`}><LockIcon className="inline-block w-5 h-5 mr-2" />Admin</button>
+                                {user && (
+                                    <button onClick={handleLogout} className="nav-button bg-red-500/20 hover:bg-red-500/40 text-red-100">Salir</button>
+                                )}
+                            </div>
+                        </div>
+                    </nav>
+                    
+                    <Ticker matches={matches} getTeamName={getTeamName} />
+
+                    <main className="py-6 px-4">
+                        {renderView()}
+                    </main>
+                    
+                    <footer className="text-center py-8 text-gray-400 dark:text-gray-600 text-sm">
+                        &copy; {new Date().getFullYear()} Ligas La Salle Tuxtla. Todos los derechos reservados.
+                    </footer>
+
+                    <MatchDetailsModal match={matchDetails} onClose={() => setMatchDetails(null)} getPlayerName={getPlayerName} getTeamName={getTeamName} />
+                    <EditTeamModal team={editingTeam} onClose={handleCloseEditTeam} onSave={handleUpdateTeam} showMessage={showMessage} />
+                    <AddPlayersModal team={addingPlayersTeam} onClose={() => setAddingPlayersTeam(null)} onAdd={handleAddMultiplePlayers} showMessage={showMessage} />
+                    <TeamProfileModal team={teamProfile} players={visiblePlayers} matches={visibleMatches} getTeamName={getTeamName} onClose={() => setTeamProfile(null)} />
+                    <Modal show={showModal} message={modalMessage} onClose={() => setShowModal(false)} />
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+    <!-- Cargar los módulos de Firebase -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Exportar los módulos a la ventana global para que puedan ser usados en el script de tipo "text/babel"
+        window.firebaseModules = {
+            initializeApp,
+            getAuth,
+            onAuthStateChanged,
+            signInWithEmailAndPassword,
+            signOut,
+            getFirestore,
+            doc,
+            getDoc,
+            addDoc,
+            setDoc,
+            updateDoc,
+            deleteDoc,
+            onSnapshot,
+            collection,
+            query,
+            where,
+            getDocs,
+        };
+    </script>
+</body>
+</html>

@@ -264,13 +264,23 @@
             }
         };
 
-        const dayOptions = [ { value: 1, label: 'Lunes' }, { value: 2, label: 'Martes' }, { value: 3, label: 'Miércoles' }, { value: 4, label: 'Jueves' }, { value: 5, label: 'Viernes' }, { value: 6, label: 'Sábado' }, { value: 0, label: 'Domingo' } ];
-        const leagueSortOrder = ['Grupos A Varonil', 'Grupos A Femenil', 'Grupos B Varonil', 'Grupos B Femenil'];
+        const leagueSortOrder = [
+            'grupo a varonil', 'grupos a varonil', 'liga varonil a', 'varonil a',
+            'grupo a femenil', 'grupos a femenil', 'liga femenil a', 'femenil a',
+            'grupo b varonil', 'grupos b varonil', 'liga varonil b', 'varonil b',
+            'grupo b femenil', 'grupos b femenil', 'liga femenil b', 'femenil b'
+        ];
+        const getLeagueSortIndex = (name) => {
+            if (!name) return 99;
+            const lower = name.toLowerCase().trim();
+            const idx = leagueSortOrder.findIndex(pattern => lower.includes(pattern) || pattern.includes(lower));
+            return idx !== -1 ? Math.floor(idx / 4) : 99;
+        };
         const sortLeagues = (a, b) => {
-            const indexA = leagueSortOrder.indexOf(a.name);
-            const indexB = leagueSortOrder.indexOf(b.name);
-            if (indexA !== -1 && indexB !== -1) return indexA - indexB;
-            return a.name.localeCompare(b.name);
+            const indexA = getLeagueSortIndex(a?.name);
+            const indexB = getLeagueSortIndex(b?.name);
+            if (indexA !== indexB) return indexA - indexB;
+            return (a?.name || '').localeCompare(b?.name || '');
         };
 
         // --- SVG Icon Components ---
@@ -2802,13 +2812,6 @@
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF();
 
-                doc.setFont("helvetica", "bold");
-                doc.setFontSize(16);
-                doc.text("LIGAS LA SALLE TUXTLA — SECUNDARIA", 105, 15, { align: "center" });
-                doc.setFontSize(12);
-                doc.text("CÉDULA DE INSCRIPCIÓN Y ROSTER DE EQUIPOS Y ALUMNOS", 105, 23, { align: "center" });
-
-                let y = 32;
                 const sortedLeagues = [...visLeagues].sort(sortLeagues);
 
                 // Pre-cargar imagenes base64 de los equipos
@@ -2819,36 +2822,73 @@
                     }
                 }
 
+                let isFirstLeague = true;
+
                 for (const league of sortedLeagues) {
                     const leagueTeams = visTeams.filter(t => t.leagueId === league.id);
                     if (leagueTeams.length === 0) continue;
 
-                    if (y > 230) { doc.addPage(); y = 20; }
+                    // Salto de página por liga (cada liga inicia en nueva página excepto la 1era)
+                    if (!isFirstLeague) {
+                        doc.addPage();
+                    }
+                    isFirstLeague = false;
 
+                    // Header de la página / Liga
+                    doc.setFont("helvetica", "bold");
+                    doc.setFontSize(15);
+                    doc.setTextColor(16, 16, 151);
+                    doc.text("LIGAS LA SALLE TUXTLA — SECUNDARIA", 105, 15, { align: "center" });
+                    doc.setFontSize(11);
+                    doc.setTextColor(71, 85, 105);
+                    doc.text("CÉDULA DE INSCRIPCIÓN Y ROSTER DE EQUIPOS Y ALUMNOS", 105, 22, { align: "center" });
+                    doc.setTextColor(0, 0, 0);
+
+                    let y = 32;
                     doc.setFontSize(13);
                     doc.setFont("helvetica", "bold");
                     doc.setTextColor(16, 16, 151);
                     doc.text(`LIGA: ${league.name.toUpperCase()}`, 14, y);
+                    doc.setLineWidth(0.5);
+                    doc.setDrawColor(16, 16, 151);
+                    doc.line(14, y + 2, 196, y + 2);
                     doc.setTextColor(0, 0, 0);
-                    y += 8;
+                    y += 10;
 
                     for (const team of leagueTeams) {
                         const teamPlayers = visPlayers.filter(p => p.teamId === team.id).sort((a, b) => a.name.localeCompare(b.name));
+                        const playerCount = teamPlayers.length;
 
-                        if (y > 230) { doc.addPage(); y = 20; }
+                        // Cálculo exacto del alto requerido para este equipo completo
+                        // Título de equipo: ~8mm, Header de tabla: ~6mm, Alumnos: ~5.2mm c/u, Margen: ~8mm
+                        const estimatedTeamHeight = 8 + 6 + (Math.max(1, playerCount) * 5.2) + 8;
+
+                        // Si el equipo no cabe completo en lo que queda de página, salto de página preventivo
+                        if (y + estimatedTeamHeight > 275 && y > 45) {
+                            doc.addPage();
+                            doc.setFont("helvetica", "bold");
+                            doc.setFontSize(11);
+                            doc.setTextColor(16, 16, 151);
+                            doc.text(`LIGA: ${league.name.toUpperCase()} (Continuación)`, 14, 15);
+                            doc.setLineWidth(0.3);
+                            doc.setDrawColor(16, 16, 151);
+                            doc.line(14, 17, 196, 17);
+                            doc.setTextColor(0, 0, 0);
+                            y = 24;
+                        }
 
                         const logoBase64 = teamLogosMap[team.id];
                         if (logoBase64) {
                             try {
-                                doc.addImage(logoBase64, 'PNG', 18, y - 5, 7, 7);
+                                doc.addImage(logoBase64, 'PNG', 14, y - 5, 7, 7);
                             } catch (e) {}
                             doc.setFontSize(11);
                             doc.setFont("helvetica", "bold");
-                            doc.text(`Equipo: ${team.name} (${teamPlayers.length} alumnos)`, 27, y);
+                            doc.text(`Equipo: ${team.name} (${playerCount} alumnos)`, 23, y);
                         } else {
                             doc.setFontSize(11);
                             doc.setFont("helvetica", "bold");
-                            doc.text(`• Equipo: ${team.name} (${teamPlayers.length} alumnos)`, 18, y);
+                            doc.text(`• Equipo: ${team.name} (${playerCount} alumnos)`, 14, y);
                         }
                         y += 4;
 
@@ -2858,18 +2898,17 @@
 
                         doc.autoTable({
                             startY: y,
-                            margin: { left: 18, right: 18 },
+                            margin: { left: 14, right: 14 },
                             head: [['#', 'Nombre del Alumno / Jugador']],
                             body: tableBody,
                             theme: 'grid',
+                            pageBreak: 'avoid',
                             headStyles: { fillColor: [16, 16, 151], textColor: [255, 255, 255], fontStyle: 'bold' },
                             styles: { fontSize: 8.5, cellPadding: 1.8 }
                         });
 
                         y = doc.lastAutoTable.finalY + 8;
                     }
-
-                    y += 4;
                 }
 
                 doc.save(`roster_equipos_alumnos_secundaria_${selectedTournamentId}.pdf`);
@@ -2891,10 +2930,11 @@
                             body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; color: #1e293b; background: #fff; }
                             h1 { text-align: center; color: #101097; margin-bottom: 5px; font-size: 24px; font-weight: 800; }
                             h2 { text-align: center; color: #475569; margin-top: 0; font-size: 15px; font-weight: 600; margin-bottom: 25px; }
-                            .league-section { margin-bottom: 35px; page-break-inside: avoid; }
+                            .league-section { margin-bottom: 35px; page-break-before: always; }
+                            .league-section:first-of-type { page-break-before: auto; }
                             .league-title { font-size: 18px; font-weight: 800; color: #101097; border-bottom: 3px solid #101097; padding-bottom: 6px; margin-bottom: 15px; }
                             .team-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
-                            .team-card { border: 1.5px solid #cbd5e1; border-radius: 14px; padding: 16px; background: #f8fafc; }
+                            .team-card { border: 1.5px solid #cbd5e1; border-radius: 14px; padding: 16px; background: #f8fafc; page-break-inside: avoid; break-inside: avoid; }
                             .team-header { display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #cbd5e1; padding-bottom: 10px; margin-bottom: 12px; }
                             .team-logo { width: 34px; height: 34px; object-fit: contain; border-radius: 50%; background: #fff; padding: 2px; border: 1px solid #cbd5e1; flex-shrink: 0; }
                             .team-name { font-size: 16px; font-weight: 800; color: #0f172a; flex: 1; }

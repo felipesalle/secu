@@ -2439,12 +2439,25 @@
             };
 
             // Resumen de la Jornada para Facebook & Redes Sociales
-            const getFacebookSummaryData = (visMatches, visLeagues, visTeams, visPlayers) => {
+            const getFacebookSummaryData = (visMatches, visLeagues, visTeams, visPlayers, selectedDate) => {
                 const sortedLeagues = [...visLeagues].sort(sortLeagues);
                 
                 // Matches with score recorded (played)
-                const playedMatches = visMatches.filter(m => m.scoreHome !== null && m.scoreHome !== undefined);
+                const allPlayedMatches = visMatches.filter(m => m.scoreHome !== null && m.scoreHome !== undefined);
                 
+                // Get all played dates sorted chronologically
+                const playedDates = [...new Set(allPlayedMatches.map(m => m.date))].filter(Boolean).sort();
+                
+                // Determine target date for results:
+                // 1. If explicit selectedDate is passed, use it.
+                // 2. Otherwise auto-select the LATEST played date (most recent jornada).
+                const targetDate = selectedDate || (playedDates.length > 0 ? playedDates[playedDates.length - 1] : null);
+
+                // Filter played matches to ONLY include targetDate matches
+                const playedMatches = targetDate 
+                    ? allPlayedMatches.filter(m => m.date === targetDate)
+                    : allPlayedMatches;
+
                 // Group played matches by league
                 const leagueResultsMap = [];
                 sortedLeagues.forEach(league => {
@@ -2457,9 +2470,9 @@
                     }
                 });
 
-                // Top Scorers / Anotadores de la Jornada (handling ties)
+                // Top Scorers / Anotadores for the target jornada
                 const playerGoalsMap = {};
-                visMatches.forEach(m => {
+                playedMatches.forEach(m => {
                     if (m.scorers && Array.isArray(m.scorers)) {
                         m.scorers.forEach(s => {
                             if (s.playerId && s.count > 0) {
@@ -2488,19 +2501,24 @@
                     topScorers = sortedScorers.filter(s => s.goals === maxGoals || s.goals >= Math.max(1, maxGoals - 1));
                 }
 
-                // Upcoming matches (6 matches)
+                // Upcoming matches (6 matches for the NEXT pending date)
                 const pendingMatches = visMatches.filter(m => m.scoreHome === null || m.scoreHome === undefined);
-                const upcomingMatches = pendingMatches.slice(0, 6);
+                const pendingDates = [...new Set(pendingMatches.map(m => m.date))].filter(Boolean).sort();
+                const nextPendingDate = pendingDates.length > 0 ? pendingDates[0] : null;
+                
+                const upcomingMatches = nextPendingDate 
+                    ? pendingMatches.filter(m => m.date === nextPendingDate).slice(0, 6)
+                    : pendingMatches.slice(0, 6);
 
-                return { leagueResultsMap, topScorers, upcomingMatches };
+                return { targetDate, leagueResultsMap, topScorers, upcomingMatches };
             };
 
-            const copyFacebookSummaryText = (visMatches, visLeagues, visTeams, visPlayers) => {
-                const { leagueResultsMap, topScorers, upcomingMatches } = getFacebookSummaryData(visMatches, visLeagues, visTeams, visPlayers);
+            const copyFacebookSummaryText = (visMatches, visLeagues, visTeams, visPlayers, selectedDate) => {
+                const { targetDate, leagueResultsMap, topScorers, upcomingMatches } = getFacebookSummaryData(visMatches, visLeagues, visTeams, visPlayers, selectedDate);
                 const sportTitle = (currentSport || 'FÚTBOL SALA').toUpperCase();
 
                 let text = `🏆 LIGAS LA SALLE TUXTLA — SECUNDARIA 🏆\n` +
-                           `📌 RESUMEN DE LA JORNADA (${sportTitle})\n\n` +
+                           `📌 RESUMEN DE LA JORNADA (${sportTitle}${targetDate ? ` — ${targetDate}` : ''})\n\n` +
                            `⚽ RESULTADOS DE LA SEMANA:\n`;
 
                 if (leagueResultsMap.length === 0) {
@@ -2547,8 +2565,8 @@
                 }
             };
 
-            const printFacebookSummaryWindow = (visMatches, visLeagues, visTeams, visPlayers) => {
-                const { leagueResultsMap, topScorers, upcomingMatches } = getFacebookSummaryData(visMatches, visLeagues, visTeams, visPlayers);
+            const printFacebookSummaryWindow = (visMatches, visLeagues, visTeams, visPlayers, selectedDate) => {
+                const { targetDate, leagueResultsMap, topScorers, upcomingMatches } = getFacebookSummaryData(visMatches, visLeagues, visTeams, visPlayers, selectedDate);
                 const printWindow = window.open('', '_blank');
                 if (!printWindow) { showMessage("Por favor permite las ventanas emergentes."); return; }
 
@@ -3317,10 +3335,10 @@
                                     Genera la tarjeta visual del resumen semanal con los 8 partidos jugados por grupo (Grupo A Varonil/Femenil, Grupo B Varonil/Femenil), máximos anotadores (incluyendo empates) y la programación de los 6 próximos encuentros.
                                 </p>
                                 <div className="flex flex-wrap gap-4 pt-2">
-                                    <button onClick={() => printFacebookSummaryWindow(visibleMatches, visibleLeagues, visibleTeams, visiblePlayers)} className="btn-primary flex-1 min-w-[220px] flex items-center justify-center bg-gradient-to-r from-amber-600 to-amber-700 text-white font-bold">
+                                    <button onClick={() => printFacebookSummaryWindow(visibleMatches, visibleLeagues, visibleTeams, visiblePlayers, upcomingMatchesDate)} className="btn-primary flex-1 min-w-[220px] flex items-center justify-center bg-gradient-to-r from-amber-600 to-amber-700 text-white font-bold">
                                         📷 Generar Tarjeta Visual (Vista Previa / Imprimir)
                                     </button>
-                                    <button onClick={() => copyFacebookSummaryText(visibleMatches, visibleLeagues, visibleTeams, visiblePlayers)} className="btn-secondary flex-1 min-w-[220px] flex items-center justify-center bg-slate-800 hover:bg-slate-900 text-white font-bold py-2.5 px-4 rounded-xl shadow-md transition-all">
+                                    <button onClick={() => copyFacebookSummaryText(visibleMatches, visibleLeagues, visibleTeams, visiblePlayers, upcomingMatchesDate)} className="btn-secondary flex-1 min-w-[220px] flex items-center justify-center bg-slate-800 hover:bg-slate-900 text-white font-bold py-2.5 px-4 rounded-xl shadow-md transition-all">
                                         📋 Copiar Texto Formateado para Facebook
                                     </button>
                                 </div>

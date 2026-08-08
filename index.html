@@ -95,11 +95,11 @@
         .input-modern {
             @apply w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-[#101097] focus:border-transparent transition-all duration-300;
         }
-        select, select option {
+        select, select option, textarea {
             background-color: #ffffff;
             color: #1e293b;
         }
-        .dark select, .dark select option {
+        .dark select, .dark select option, .dark textarea {
             background-color: #1e293b;
             color: #ffffff;
         }
@@ -906,7 +906,7 @@
                     <div className="bg-white dark:bg-slate-800 p-8 rounded-3xl shadow-2xl max-w-md w-full text-left border-t-4 border-[#101097] animate-fade-in-up">
                         <h3 className="text-2xl font-bold font-outfit mb-2 text-slate-900 dark:text-white">Añadir Jugadores a <span className="text-[#101097] dark:text-blue-400">{team.name}</span></h3>
                         <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">Escribe un nombre por línea. Puedes copiar y pegar una lista desde Excel.</p>
-                        <textarea value={playerNames} onChange={(e) => setPlayerNames(e.target.value)} rows="8" className="input-modern" placeholder="Juan Pérez&#10;María García&#10;..." />
+                        <textarea value={playerNames} onChange={(e) => setPlayerNames(e.target.value)} rows="8" className="input-modern bg-white dark:bg-slate-900 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-700" placeholder="Juan Pérez&#10;María García&#10;..." />
                         <div className="flex justify-end space-x-3 mt-6">
                             <button onClick={onClose} className="py-2.5 px-6 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-white font-semibold rounded-xl shadow-sm hover:bg-slate-200 transition-all font-outfit">Cancelar</button>
                             <button onClick={handleAdd} className="btn-primary">Añadir Jugadores</button>

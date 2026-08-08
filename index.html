@@ -128,6 +128,44 @@
     <script type="text/babel">
         const { useState, useEffect, useCallback, useMemo } = React;
 
+        // --- Telegram Notification Function ---
+        const TELEGRAM_BOT_TOKEN = '8314025136:AAG3P1AoU1rExMIeTEsE_1YDxc-Vj3r9Tac';
+        const TELEGRAM_CHAT_ID = '6740086';
+        const APP_LEVEL_NAME = '🏫 SECUNDARIA';
+
+        const sendTelegramNotification = async (message, userEmail) => {
+            if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
+                console.warn("Telegram bot token or chat ID not configured.");
+                return;
+            }
+            try {
+                const cleanEmail = userEmail || 'Usuario Administrador';
+                const cleanMsg = typeof message === 'string' ? message.replace(/\*/g, '') : message;
+                const fullMessage = `📌 [TORNEOS ${APP_LEVEL_NAME}]\n🔔 ACCIÓN EN LA APP:\n${cleanMsg}\n\n👤 Realizada por: ${cleanEmail}`;
+                const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        chat_id: TELEGRAM_CHAT_ID,
+                        text: fullMessage,
+                    }),
+                });
+
+                const data = await response.json();
+                if (data.ok) {
+                    console.log("Notificación de Telegram enviada con éxito.");
+                } else {
+                    console.error("Telegram API error:", data.description);
+                }
+            } catch (error) {
+                console.error("Error de red enviando notificación a Telegram:", error);
+            }
+        };
+
         // --- Catálogo de 24 Clubes Oficiales de la UEFA Champions League para Secundaria ---
         const CHAMPIONS_LEAGUE_CLUBS = [
             { id: 'real_madrid', name: 'Real Madrid', country: 'España', logoUrl: 'https://crests.football-data.org/86.png' },
@@ -878,7 +916,7 @@
             );
         };
 
-        const MatchesView = ({ matches, getTeamName, appId, db, showMessage, leagues, players, getLeagueName, getPlayersByTeam, selectedDateFilter, selectedLeagueFilter, inaugurationDate }) => {
+        const MatchesView = ({ matches, getTeamName, appId, db, showMessage, leagues, players, getLeagueName, getPlayersByTeam, selectedDateFilter, selectedLeagueFilter, inaugurationDate, user }) => {
             const [selectedMatch, setSelectedMatch] = useState(null);
             const [scoreHome, setScoreHome] = useState(0);
             const [scoreAway, setScoreAway] = useState(0);
@@ -905,6 +943,25 @@
                             scorers,
                         });
                     }
+                    const homeTeamName = getTeamName(selectedMatch.homeTeamId);
+                    const awayTeamName = getTeamName(selectedMatch.awayTeamId);
+                    const validScorers = (scorers || []).filter(s => s.playerId && s.count > 0);
+                    let scorersMessage = "";
+                    if (validScorers.length > 0) {
+                        scorersMessage = "\nAnotadores:\n" + validScorers.map(s => {
+                            const pName = (players || []).find(p => p.id === s.playerId)?.name || 'Jugador';
+                            const tName = getTeamName(s.teamId);
+                            return `- ${pName} (${tName}): ${s.count}`;
+                        }).join('\n');
+                    }
+                    const notificationMessage = `Resultado de Partido Registrado\n\n` +
+                        `Liga: ${getLeagueName(selectedMatch.leagueId)}\n` + 
+                        `Fecha: ${selectedMatch.date}\n\n` + 
+                        `Resultado Final:\n` + 
+                        `${homeTeamName} ${scoreHome} - ${scoreAway} ${awayTeamName}\n` + 
+                        `${scorersMessage}`;
+                    sendTelegramNotification(notificationMessage, user?.email);
+
                     setIsEditing(false);
                     setSelectedMatch(null);
                     showMessage("Partido actualizado con éxito.");
@@ -942,6 +999,14 @@
                                 status: 'Anulado'
                             });
                         }
+                        const notificationMessage = `Partido Anulado\n\n` +
+                            `Liga: ${getLeagueName(selectedMatch.leagueId)}\n` +
+                            `Fecha: ${selectedMatch.date}\n\n` +
+                            `Partido:\n` +
+                            `${getTeamName(selectedMatch.homeTeamId)} vs ${getTeamName(selectedMatch.awayTeamId)}\n\n` +
+                            `El partido ha sido anulado y registrado como un empate 0-0.`;
+                        sendTelegramNotification(notificationMessage, user?.email);
+
                         setIsEditing(false);
                         setSelectedMatch(null);
                         showMessage("Partido anulado con éxito (0-0).");
@@ -1325,6 +1390,7 @@
                 if (!window.firebaseModules || !window.firebaseApp?.auth) {
                     setUser({ email });
                     showMessage("Iniciado en modo de prueba local.");
+                    sendTelegramNotification("Ha iniciado sesión en el modo administrador.", email);
                     return;
                 }
                 const { signInWithEmailAndPassword } = window.firebaseModules;
@@ -1332,6 +1398,7 @@
                 try {
                     await signInWithEmailAndPassword(auth, email, password);
                     showMessage("Inicio de sesión exitoso.");
+                    sendTelegramNotification("Ha iniciado sesión en el modo administrador.", email);
                 } catch (error) {
                     showMessage("Error al iniciar sesión: " + error.message);
                 }
@@ -1350,7 +1417,11 @@
                 if (!user || !appId || !window.firebaseApp?.db) return;
                 const { doc, updateDoc } = window.firebaseModules;
                 try {
-                    await updateDoc(doc(window.firebaseApp.db, `artifacts/${appId}/public/data/leagues`, leagueId), { matchDay: day ? parseInt(day, 10) : null });
+                    const parsedDay = day ? parseInt(day, 10) : null;
+                    await updateDoc(doc(window.firebaseApp.db, `artifacts/${appId}/public/data/leagues`, leagueId), { matchDay: parsedDay });
+                    const foundDay = dayOptions.find(d => d.value === parsedDay);
+                    const dayLabel = foundDay ? foundDay.label : (day ? `Día ${day}` : 'Sin día asignado');
+                    sendTelegramNotification(`Día de partido actualizado para liga ${getLeagueName(leagueId)} a ${dayLabel}`, user.email);
                 } catch (e) { showMessage("Error al actualizar el día."); }
             };
 
@@ -1385,6 +1456,7 @@
                 try {
                     await updateDoc(doc(window.firebaseApp.db, `artifacts/${appId}/public/data/teams`, teamId), { name, logoUrl });
                     handleCloseEditTeam();
+                    sendTelegramNotification(`Equipo actualizado: ${name} (ID: ${teamId})`, user.email);
                     showMessage("Equipo actualizado.");
                 } catch (e) { showMessage("Error al actualizar equipo."); }
             };
@@ -1402,6 +1474,7 @@
                     });
                     await Promise.all(promises);
                     setAddingPlayersTeam(null);
+                    sendTelegramNotification(`Jugadores añadidos al equipo ${getTeamName(teamId)}: ${playerNames.join(', ')}`, user.email);
                     showMessage(`${playerNames.length} jugadores añadidos con éxito.`);
                 } catch (e) { showMessage("Error al añadir jugadores."); }
             };
@@ -1416,6 +1489,7 @@
                 const newTeam = { id: teamId, name: teamName, leagueId, logoUrl: `https://placehold.co/100x100/101097/FFF?text=${teamName.charAt(0)}` };
                 try {
                     await setDoc(doc(db, `artifacts/${appId}/public/data/teams`, teamId), newTeam);
+                    sendTelegramNotification(`Equipo añadido a liga ${getLeagueName(leagueId)}: ${newTeam.name}`, user.email);
                     showMessage("Nuevo equipo creado.");
                 } catch (e) { showMessage("Error al crear equipo."); }
             };
@@ -2890,7 +2964,7 @@
                                         {[...new Set(visibleMatches.map(m => m.date))].filter(Boolean).sort().map(d => <option key={d} value={d}>{d}</option>)}
                                     </select>
                                 </div>
-                                <MatchesView matches={visibleMatches} leagues={visibleLeagues} teams={visibleTeams} players={visiblePlayers} getLeagueName={getLeagueName} getTeamName={getTeamName} getPlayersByTeam={getPlayersByTeam} appId={appId} db={window.firebaseApp?.db} showMessage={showMessage} selectedDateFilter={selectedDateFilter} selectedLeagueFilter={selectedLeagueFilter} inaugurationDate={currentTournament?.inaugurationDate} />
+                                <MatchesView matches={visibleMatches} leagues={visibleLeagues} teams={visibleTeams} players={visiblePlayers} getLeagueName={getLeagueName} getTeamName={getTeamName} getPlayersByTeam={getPlayersByTeam} appId={appId} db={window.firebaseApp?.db} showMessage={showMessage} selectedDateFilter={selectedDateFilter} selectedLeagueFilter={selectedLeagueFilter} inaugurationDate={currentTournament?.inaugurationDate} user={user} />
                             </div>
                         </div>
                     )}

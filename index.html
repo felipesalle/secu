@@ -1649,7 +1649,7 @@
                 } catch (e) { console.error(e); showMessage("Error al crear torneo."); }
             };
 
-            // Helper para calcular el próximo miércoles lectivo (omitiendo vacaciones escolares)
+            // Helper para calcular el próximo miércoles lectivo (omitiendo vacaciones escolares y días festivos SEP)
             const getNextValidWednesday = (date) => {
                 const result = new Date(date);
                 // Si la fecha actual no es miércoles (getDay() !== 3), avanzar al siguiente miércoles
@@ -1657,22 +1657,30 @@
                 const daysUntilWednesday = (3 - dayOfWeek + 7) % 7;
                 result.setDate(result.getDate() + daysUntilWednesday);
 
-                // Detección estricta de periodos vacacionales del ciclo escolar
+                // Detección estricta de periodos vacacionales y feriados oficiales SEP (185 días)
                 const isVacation = (d) => {
-                    const month = d.getMonth(); // 0-indexed: 0=Enero, 11=Diciembre
+                    const month = d.getMonth(); // 0-indexed: 0=Enero, 4=Mayo, 8=Septiembre, 10=Noviembre, 11=Diciembre
                     const day = d.getDate();
 
-                    // Vacaciones de Navidad: 19 de Diciembre al 6 de Enero
+                    // Días festivos oficiales SEP de suspensión docente en Miércoles:
+                    // 16 de Septiembre (Día de la Independencia de México)
+                    if (month === 8 && day === 16) return true;
+                    // 5 de Mayo (Aniversario de la Batalla de Puebla)
+                    if (month === 4 && day === 5) return true;
+                    // 2 de Noviembre (Día de Muertos)
+                    if (month === 10 && day === 2) return true;
+
+                    // Vacaciones de Navidad / Año Nuevo / Reyes: 19 de Diciembre al 6 de Enero
                     if ((month === 11 && day >= 19) || (month === 0 && day <= 6)) return true;
-                    // Vacaciones de Semana Santa: 28 de Marzo al 12 de Abril
-                    if ((month === 2 && day >= 28) || (month === 3 && day <= 12)) return true;
-                    // Vacaciones de Verano / Fin de curso: Julio y Agosto
+                    // Vacaciones de Semana Santa: 22 de Marzo al 9 de Abril
+                    if ((month === 2 && day >= 22) || (month === 3 && day <= 9)) return true;
+                    // Receso Escolar / Vacaciones de Verano: Julio y Agosto
                     if (month === 6 || month === 7) return true;
 
                     return false;
                 };
 
-                // Si cae en período vacacional, saltar semana a semana hasta el siguiente miércoles de clases
+                // Si cae en día festivo o vacaciones, saltar semana a semana hasta el siguiente miércoles lectivo
                 while (isVacation(result)) {
                     result.setDate(result.getDate() + 7);
                 }

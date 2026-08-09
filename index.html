@@ -1335,6 +1335,7 @@
             const [teamProfile, setTeamProfile] = useState(null);
             const [showCountrySelector, setShowCountrySelector] = useState(false);
             const [targetTeamForCountry, setTargetTeamForCountry] = useState(null);
+            const [inaugInputDate, setInaugInputDate] = useState('');
 
             // Modo Oscuro / Claro con persistencia
             const [darkMode, setDarkMode] = useState(() => localStorage.getItem('theme') === 'dark');
@@ -3132,6 +3133,10 @@
             const currentTournament = tournaments.find(t => t.id === selectedTournamentId);
             const currentSport = currentTournament?.sport || 'Fútbol';
 
+            useEffect(() => {
+                setInaugInputDate(currentTournament?.inaugurationDate || '');
+            }, [selectedTournamentId, currentTournament?.inaugurationDate]);
+
             // Cálculo dinámico de Estadísticas para el Hero Banner (General o por Liga)
             const heroStats = useMemo(() => {
                 const isFiltered = Boolean(selectedStandingsLeagueFilter);
@@ -3354,14 +3359,37 @@
                                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                             <div>
                                                 <label className="block text-xs font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300 mb-1 font-outfit">🎉 Fecha de Inauguración Deportiva (Sábado)</label>
-                                                <p className="text-xs text-amber-700 dark:text-amber-400">Al seleccionar el sábado de inauguración, los partidos del miércoles anterior se trasladarán automáticamente a este sábado y serán <strong>Amistosos</strong>.</p>
+                                                <p className="text-xs text-amber-700 dark:text-amber-400">Al guardar el sábado de inauguración, los partidos del miércoles previo se trasladarán automáticamente a este día.</p>
                                             </div>
-                                            <input
-                                                type="date"
-                                                value={currentTournament?.inaugurationDate || ''}
-                                                onChange={(e) => handleInaugurationChange(e.target.value)}
-                                                className="input-modern bg-white dark:bg-slate-900 sm:w-64"
-                                            />
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <input
+                                                    type="date"
+                                                    value={inaugInputDate}
+                                                    onChange={(e) => setInaugInputDate(e.target.value)}
+                                                    className="input-modern bg-white dark:bg-slate-900 sm:w-44"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleInaugurationChange(inaugInputDate)}
+                                                    className="btn-primary text-xs py-2.5 px-4 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl shadow-md transition-all whitespace-nowrap"
+                                                    title="Guardar y aplicar fecha de inauguración"
+                                                >
+                                                    💾 Guardar
+                                                </button>
+                                                {currentTournament?.inaugurationDate && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setInaugInputDate('');
+                                                            handleInaugurationChange('');
+                                                        }}
+                                                        className="btn-secondary text-xs py-2.5 px-3 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl shadow-md transition-all whitespace-nowrap"
+                                                        title="Quitar fecha de inauguración y retornar partidos a miércoles"
+                                                    >
+                                                        ❌ Quitar
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
                                         {currentTournament?.inaugurationDate && (
                                             <div className="pt-2 border-t border-amber-200 dark:border-amber-800/40 flex justify-end">

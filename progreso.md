@@ -82,7 +82,17 @@ Todos los desarrollos descritos a continuación han sido implementados, probados
 
 ---
 
-## 🛠️ 6. Resumen de Commits Recientes en GitHub
+## 🇲🇽 6. Exclusión Estricta de Días Festivos SEP (185 Días)
+- **Omitir Días Festivos Oficiales de la SEP**:
+  - Se configuró la función `getNextValidWednesday` para que al generar el calendario deportivo no agende partidos en días de suspensión docente oficial en miércoles:
+    - **16 de Septiembre**: Día de la Independencia de México (Skipped).
+    - **5 de Mayo**: Aniversario de la Batalla de Puebla (Skipped).
+    - **2 de Noviembre**: Día de Muertos (Skipped).
+  - Si una fecha coincide con un feriado oficial, el sistema salta automáticamente al siguiente miércoles lectivo hábil.
+
+---
+
+## 🛠️ 7. Resumen de Commits Recientes en GitHub
 - `7ee59eb`: Integrar sistema de notificaciones automáticas por Telegram (7 puntos de alerta).
 - `df7ed13`: Corregir contraste de color de texto en textarea de AddPlayersModal.
 - `9bb9275`: Corregir contraste de texto en botones de navegación del header.
@@ -93,6 +103,7 @@ Todos los desarrollos descritos a continuación han sido implementados, probados
 - `660bf34`: Hacer dinámica la cantidad de partidos de la próxima jornada para adaptarse a cualquier número de equipos por liga.
 - `54241b5`: Corregir saltos de página por liga y prevenir división de equipos en PDF e impresión de roster.
 - `bec5753`: Corregir reversión de partidos al miércoles original al cambiar o remover fecha de inauguración.
+- `53fbeea`: Excluir feriados oficiales SEP (16 de septiembre, 5 de mayo) de la programación de partidos en miércoles.
 
 ---
 

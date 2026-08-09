@@ -104,6 +104,7 @@ Todos los desarrollos descritos a continuación han sido implementados, probados
 - `54241b5`: Corregir saltos de página por liga y prevenir división de equipos en PDF e impresión de roster.
 - `bec5753`: Corregir reversión de partidos al miércoles original al cambiar o remover fecha de inauguración.
 - `53fbeea`: Excluir feriados oficiales SEP (16 de septiembre, 5 de mayo) de la programación de partidos en miércoles.
+- `f1e3670`: Solucionar pérdida de foco en input de fecha de inauguración usando estado local inaugInputDate y botones Guardar/Quitar.
 
 ---
 

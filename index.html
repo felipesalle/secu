@@ -1694,8 +1694,6 @@
                 const { doc, setDoc, collection, getDocs, updateDoc } = window.firebaseModules;
                 const db = window.firebaseApp.db;
 
-                const oldInaugDate = currentTournament.inaugurationDate;
-
                 try {
                     // Actualizar el torneo en Firebase
                     await setDoc(doc(db, `artifacts/${appId}/public/data/tournaments`, currentTournament.id), {
@@ -1703,21 +1701,10 @@
                         inaugurationDate: inaugDate
                     });
 
-                    // Obtener partidos del torneo actual
+                    // Obtener todos los partidos de las ligas de este torneo
                     const matchesSnapshot = await getDocs(collection(db, `artifacts/${appId}/public/data/matches`));
                     let movedCount = 0;
                     let revertedCount = 0;
-
-                    // Calcular el miércoles de la antigua inauguración (si existía)
-                    let oldWednesdayStr = null;
-                    if (oldInaugDate) {
-                        const oldInaug = new Date(oldInaugDate + 'T00:00:00');
-                        const oldDay = oldInaug.getDay();
-                        const oldSub = (oldDay - 3 + 7) % 7 || 7;
-                        const oldWed = new Date(oldInaug);
-                        oldWed.setDate(oldWed.getDate() - oldSub);
-                        oldWednesdayStr = oldWed.toISOString().split('T')[0];
-                    }
 
                     // Calcular el miércoles de la nueva inauguración (si existe)
                     let newWednesdayStr = null;
@@ -1735,46 +1722,49 @@
                         const m = matchDoc.data();
                         if (!visibleLeagueIds.includes(m.leagueId)) continue;
 
-                        let targetDate = m.originalDate || m.date;
-
-                        // 1. Si el partido pertenecía a la antigua fecha de inauguración, revertirlo a su miércoles original
-                        if (oldInaugDate && (m.date === oldInaugDate || m.originalDate === oldWednesdayStr)) {
-                            targetDate = m.originalDate || oldWednesdayStr;
-                            revertedCount++;
+                        // Determinar matemáticamente el MIÉRCOLES ORIGINAL de este partido:
+                        // Si m.date o m.originalDate están en un SÁBADO (getDay() === 6), su miércoles son 3 días antes!
+                        let baseWednesday = m.originalDate || m.date;
+                        const checkDate = new Date(baseWednesday + 'T00:00:00');
+                        if (checkDate.getDay() === 6) {
+                            checkDate.setDate(checkDate.getDate() - 3);
+                            baseWednesday = checkDate.toISOString().split('T')[0];
                         }
 
-                        // 2. Si hay nueva fecha de inauguración y coincide con este miércoles
+                        let targetDate = baseWednesday; // Por defecto retorna a su miércoles original
                         let isFriendlyMatch = false;
-                        if (inaugDate && newWednesdayStr) {
-                            if (targetDate === newWednesdayStr || m.originalDate === newWednesdayStr) {
-                                targetDate = inaugDate; // Trasladar al Sábado de Inauguración
-                                isFriendlyMatch = false; // ¡Cuenta para la tabla!
-                                movedCount++;
-                            } else if (targetDate < inaugDate) {
-                                isFriendlyMatch = true; // Anteriores son amistosos
-                            } else {
-                                isFriendlyMatch = false; // Posteriores son oficiales
-                            }
+
+                        // Si hay una nueva fecha de inauguración y este partido corresponde al miércoles previo
+                        if (inaugDate && newWednesdayStr && baseWednesday === newWednesdayStr) {
+                            targetDate = inaugDate; // Trasladar al Sábado de Inauguración
+                            isFriendlyMatch = false; // ¡Cuenta para la clasificación!
+                            movedCount++;
                         } else {
-                            isFriendlyMatch = false; // Si no hay inauguración, todos son oficiales
+                            if (m.date !== baseWednesday) {
+                                revertedCount++; // Se revirtió de un sábado anterior a su miércoles
+                            }
+                            if (inaugDate) {
+                                isFriendlyMatch = targetDate < inaugDate; // Anteriores al evento son amistosos
+                            } else {
+                                isFriendlyMatch = false; // Sin inauguración, todos son oficiales
+                            }
                         }
 
-                        // Actualizar en Firebase si hubo cambios en fecha u oficialidad
-                        const originalDateValue = m.originalDate || (m.date === oldInaugDate ? oldWednesdayStr : m.date);
+                        // Guardar en Firebase con su originalDate (miércoles original) garantizado
                         await updateDoc(doc(db, `artifacts/${appId}/public/data/matches`, m.id), {
                             date: targetDate,
-                            originalDate: originalDateValue,
+                            originalDate: baseWednesday,
                             isFriendly: isFriendlyMatch
                         });
                     }
 
                     sendTelegramNotification(
                         `🎉 INAUGURACIÓN ACTUALIZADA (${APP_LEVEL_NAME})`,
-                        `Administrador: ${user.email}\nTorneo: ${currentTournament.name}\nNueva Inauguración: ${inaugDate || 'Removida'}\nPartidos revertidos a miércoles: ${revertedCount}\nPartidos movidos a inauguración: ${movedCount}`
+                        `Administrador: ${user.email}\nTorneo: ${currentTournament.name}\nNueva Inauguración: ${inaugDate || 'Removida'}\nPartidos revertidos a su miércoles original: ${revertedCount}\nPartidos movidos a nueva inauguración: ${movedCount}`
                     );
 
                     if (inaugDate) {
-                        showMessage(`🎉 Inauguración actualizada al Sábado ${inaugDate}. Partidos anteriores revertidos a su miércoles original y ${movedCount} partidos asignados al día del evento.`);
+                        showMessage(`🎉 Inauguración actualizada al Sábado ${inaugDate}. Partidos anteriores revertidos a sus miércoles originales y ${movedCount} partidos asignados a la nueva fecha de inauguración.`);
                     } else {
                         showMessage(`ℹ️ Fecha de inauguración removida. Todos los partidos han retornado a sus miércoles programados.`);
                     }

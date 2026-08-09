@@ -74,7 +74,15 @@ Todos los desarrollos descritos a continuación han sido implementados, probados
 
 ---
 
-## 🛠️ 5. Resumen de Commits Recientes en GitHub
+## 📅 5. Reversión Automática al Cambiar o Eliminar Fecha de Inauguración
+- **Corrección de Lógica de Fechas**:
+  - Al cambiar o borrar la fecha de inauguración deportiva, los partidos que habían sido trasladados a la inauguración previa **retornan automáticamente a su miércoles lectivo original** (`originalDate`).
+  - Si se establece una nueva fecha de inauguración (ej. un nuevo sábado), los partidos del miércoles inmediatamente anterior se trasladan a esa nueva fecha, dejando libre el miércoles previo.
+  - La oficialidad (`isFriendly`) se recalcula en tiempo real: los encuentros anteriores al evento se marcan como amistosos y el día de inauguración y posteriores como oficiales.
+
+---
+
+## 🛠️ 6. Resumen de Commits Recientes en GitHub
 - `7ee59eb`: Integrar sistema de notificaciones automáticas por Telegram (7 puntos de alerta).
 - `df7ed13`: Corregir contraste de color de texto en textarea de AddPlayersModal.
 - `9bb9275`: Corregir contraste de texto en botones de navegación del header.
@@ -84,6 +92,7 @@ Todos los desarrollos descritos a continuación han sido implementados, probados
 - `91d82c1`: Corregir desbordamiento de escudos y ajustar diseño inferior de 2 columnas con marco rojo.
 - `660bf34`: Hacer dinámica la cantidad de partidos de la próxima jornada para adaptarse a cualquier número de equipos por liga.
 - `54241b5`: Corregir saltos de página por liga y prevenir división de equipos en PDF e impresión de roster.
+- `bec5753`: Corregir reversión de partidos al miércoles original al cambiar o remover fecha de inauguración.
 
 ---
 

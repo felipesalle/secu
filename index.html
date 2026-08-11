@@ -1336,6 +1336,9 @@
             const [showCountrySelector, setShowCountrySelector] = useState(false);
             const [targetTeamForCountry, setTargetTeamForCountry] = useState(null);
             const [inaugInputDate, setInaugInputDate] = useState('');
+            const [newTournamentName, setNewTournamentName] = useState('');
+            const [cloneSourceTournamentId, setCloneSourceTournamentId] = useState('');
+            const [creationMode, setCreationMode] = useState('clone');
 
             // Modo Oscuro / Claro con persistencia
             const [darkMode, setDarkMode] = useState(() => localStorage.getItem('theme') === 'dark');
@@ -1568,23 +1571,32 @@
 
             const createLeaguesAndTeams = async () => {
                 if (!user || !appId || !window.firebaseApp?.db) return;
-                const tournamentName = prompt("Introduce el nombre del nuevo Torneo (ej. Torneo Fútbol Secundaria 2026):");
-                if (!tournamentName) return;
+                let tName = newTournamentName.trim();
+                if (!tName) {
+                    tName = prompt("Introduce el nombre del nuevo Torneo (ej. Torneo Básquetbol Secundaria 2026):");
+                }
+                if (!tName) return;
 
                 const { doc, setDoc } = window.firebaseModules;
                 const db = window.firebaseApp.db;
                 const tournamentId = 'tourn_' + Date.now();
-                const newTournament = { id: tournamentId, name: tournamentName, sport: selectedSport, createdAt: new Date().toISOString() };
+                const newTournament = { id: tournamentId, name: tName, sport: selectedSport, createdAt: new Date().toISOString() };
 
                 try {
                     await setDoc(doc(db, `artifacts/${appId}/public/data/tournaments`, tournamentId), newTournament);
 
-                    // Comprobar si existe un torneo previo para ofrecer clonación de plantillas del ciclo escolar
                     let cloned = false;
-                    if (tournaments.length > 0) {
-                        const previousTournament = tournaments[0];
-                        const prevLeagues = leagues.filter(l => l.tournamentId === previousTournament.id);
-                        if (prevLeagues.length > 0 && confirm(`¿Deseas clonar las ligas, equipos y lista de alumnos del torneo previo ("${previousTournament.name}") para mantener los equipos del ciclo escolar en este nuevo torneo?`)) {
+                    let copiedTeamsCount = 0;
+                    let copiedPlayersCount = 0;
+                    let sourceTournamentName = '';
+
+                    if (creationMode === 'clone' && tournaments.length > 0) {
+                        const targetSourceId = cloneSourceTournamentId || tournaments[0].id;
+                        const sourceTournament = tournaments.find(t => t.id === targetSourceId) || tournaments[0];
+                        sourceTournamentName = sourceTournament.name;
+
+                        const prevLeagues = leagues.filter(l => l.tournamentId === sourceTournament.id);
+                        if (prevLeagues.length > 0) {
                             cloned = true;
                             for (const prevLeague of prevLeagues) {
                                 const newLeagueId = `league_${tournamentId}_${prevLeague.name.replace(/\s+/g, '_')}`;
@@ -1592,12 +1604,14 @@
                                     id: newLeagueId,
                                     name: prevLeague.name,
                                     sport: selectedSport,
-                                    tournamentId
+                                    tournamentId,
+                                    matchDay: prevLeague.matchDay || 3
                                 });
 
                                 const prevTeams = teams.filter(t => t.leagueId === prevLeague.id);
                                 for (const prevTeam of prevTeams) {
-                                    const newTeamId = `team_${newLeagueId}_${prevTeam.id.split('_').pop()}`;
+                                    copiedTeamsCount++;
+                                    const newTeamId = `team_${newLeagueId}_${prevTeam.id.split('_').pop() || Math.random().toString(36).substring(2,7)}`;
                                     await setDoc(doc(db, `artifacts/${appId}/public/data/teams`, newTeamId), {
                                         id: newTeamId,
                                         name: prevTeam.name,
@@ -1607,6 +1621,7 @@
 
                                     const prevPlayers = players.filter(p => p.teamId === prevTeam.id);
                                     for (const prevPlayer of prevPlayers) {
+                                        copiedPlayersCount++;
                                         const newPlayerId = 'player_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
                                         await setDoc(doc(db, `artifacts/${appId}/public/data/players`, newPlayerId), {
                                             id: newPlayerId,
@@ -1641,13 +1656,21 @@
                         }
                     }
 
-                    // Establecer el nuevo torneo como activo automáticamente
+                    // Establecer el nuevo torneo como activo automáticamente y limpiar formulario
                     setSelectedTournamentId(tournamentId);
-                    showMessage(cloned 
-                        ? `¡Torneo "${tournamentName}" creado! Se clonaron las ligas, equipos y alumnos del ciclo escolar.` 
-                        : `¡Nuevo torneo "${tournamentName}" creado con éxito!`
-                    );
-                } catch (e) { console.error(e); showMessage("Error al crear torneo."); }
+                    setNewTournamentName('');
+
+                    if (cloned) {
+                        showMessage(`🎉 ¡Torneo "${tName}" creado! Se clonaron ${copiedTeamsCount} equipos y ${copiedPlayersCount} alumnos desde "${sourceTournamentName}".`);
+                        sendTelegramNotification(`Nuevo Torneo creado (${selectedSport}): ${tName} (Clonado de ${sourceTournamentName})`, user.email);
+                    } else {
+                        showMessage(`🎉 Torneo "${tName}" creado exitosamente con la estructura base de Secundaria.`);
+                        sendTelegramNotification(`Nuevo Torneo creado (${selectedSport}): ${tName}`, user.email);
+                    }
+                } catch (e) {
+                    console.error("Error al crear el torneo:", e);
+                    showMessage("Error al crear el torneo.");
+                }
             };
 
             // Helper para calcular el próximo miércoles lectivo (omitiendo vacaciones escolares y días festivos SEP)
@@ -3292,15 +3315,77 @@
                                 </div>
 
                                 <div className="card p-8 space-y-4">
-                                    <h3 className="text-xl font-bold font-outfit text-slate-800 dark:text-white flex items-center border-b border-slate-100 dark:border-slate-700 pb-3">Crear Nuevo Torneo de Secundaria</h3>
+                                    <h3 className="text-xl font-bold font-outfit text-slate-800 dark:text-white flex items-center border-b border-slate-100 dark:border-slate-700 pb-3">🏆 Crear Nuevo Torneo de Secundaria</h3>
                                     <div className="space-y-4">
+                                        <div>
+                                            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1 font-outfit">Nombre del Torneo</label>
+                                            <input 
+                                                type="text" 
+                                                value={newTournamentName} 
+                                                onChange={(e) => setNewTournamentName(e.target.value)} 
+                                                placeholder="Ej. Torneo Básquetbol Secundaria 2026" 
+                                                className="input-modern" 
+                                            />
+                                        </div>
                                         <div>
                                             <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1 font-outfit">Disciplina Deportiva</label>
                                             <select id="sport-select" value={selectedSport} onChange={(e) => setSelectedSport(e.target.value)} className="input-modern">
                                                 {['Fútbol', 'Básquetbol', 'Tocho', 'Voleibol'].map(sport => <option key={sport} value={sport}>{sport}</option>)}
                                             </select>
                                         </div>
-                                        <button onClick={createLeaguesAndTeams} className="btn-primary w-full flex items-center justify-center py-3"><PlusIcon className="w-5 h-5 mr-2" />Crear Torneo</button>
+
+                                        {tournaments.length > 0 && (
+                                            <div className="space-y-3 p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-800">
+                                                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 font-outfit">📋 Equipos y Alumnos del Ciclo Escolar</label>
+                                                <div className="space-y-2">
+                                                    <label className="flex items-center space-x-2 text-sm text-slate-700 dark:text-slate-200 cursor-pointer">
+                                                        <input 
+                                                            type="radio" 
+                                                            name="creationMode" 
+                                                            value="clone" 
+                                                            checked={creationMode === 'clone'} 
+                                                            onChange={() => setCreationMode('clone')} 
+                                                            className="text-[#101097] focus:ring-[#101097]" 
+                                                        />
+                                                        <span className="font-semibold">Clonar equipos y lista de alumnos de un torneo previo</span>
+                                                    </label>
+                                                    
+                                                    {creationMode === 'clone' && (
+                                                        <div className="ml-6 pt-1">
+                                                            <label className="block text-xs text-slate-500 mb-1">Selecciona el torneo origen a clonar:</label>
+                                                            <select 
+                                                                value={cloneSourceTournamentId || (tournaments[0] ? tournaments[0].id : '')} 
+                                                                onChange={(e) => setCloneSourceTournamentId(e.target.value)} 
+                                                                className="input-modern text-sm py-2"
+                                                            >
+                                                                {tournaments.map(t => (
+                                                                    <option key={t.id} value={t.id}>
+                                                                        {t.name} ({t.sport || 'Fútbol'})
+                                                                    </option>
+                                                                ))}
+                                                            </select>
+                                                        </div>
+                                                    )}
+
+                                                    <label className="flex items-center space-x-2 text-sm text-slate-700 dark:text-slate-200 cursor-pointer pt-1">
+                                                        <input 
+                                                            type="radio" 
+                                                            name="creationMode" 
+                                                            value="default" 
+                                                            checked={creationMode === 'default'} 
+                                                            onChange={() => setCreationMode('default')} 
+                                                            className="text-[#101097] focus:ring-[#101097]" 
+                                                        />
+                                                        <span>Crear torneo desde cero (con equipos por defecto)</span>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        <button onClick={createLeaguesAndTeams} className="btn-primary w-full flex items-center justify-center py-3">
+                                            <PlusIcon className="w-5 h-5 mr-2" />
+                                            {creationMode === 'clone' && tournaments.length > 0 ? 'Crear y Clonar Equipos' : 'Crear Torneo'}
+                                        </button>
                                     </div>
                                 </div>
                             </div>

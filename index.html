@@ -3209,7 +3209,7 @@
             }, [selectedStandingsLeagueFilter, visibleLeagues, visibleTeams, visibleMatches, visiblePlayers, calculateStandings, calculateTopScorers, currentSport]);
 
             // VISTA PÚBLICA DE CLASIFICACIONES
-            const StandingsView = () => (
+            const renderStandingsView = () => (
                 <div className="p-4 md:p-8 space-y-8 max-w-7xl mx-auto">
                     {/* Hero Banner Dinámico por Deporte */}
                     <SportsHeroBanner
@@ -3278,7 +3278,7 @@
             );
 
             // PANEL DE ADMINISTRACIÓN POR SUB-PESTAÑAS
-            const AdminPanel = () => (
+            const renderAdminPanel = () => (
                 <div className="p-4 md:p-8 space-y-8 max-w-7xl mx-auto">
                     {/* Navegación por Sub-pestañas */}
                     <div className="flex flex-wrap gap-2 border-b border-slate-200 dark:border-slate-700 pb-4">
@@ -3607,10 +3607,10 @@
                 }
                 switch (view) {
                     case 'standings':
-                        return <StandingsView />;
+                        return renderStandingsView();
                     case 'admin':
                         return user ? (
-                            <AdminPanel />
+                            renderAdminPanel()
                         ) : (
                             <div className="flex items-center justify-center min-h-[75vh] p-4">
                                 <div className="card p-10 max-w-md w-full text-center animate-fade-in-up border-t-4 border-[#101097]">
@@ -3626,7 +3626,7 @@
                             </div>
                         );
                     default:
-                        return <StandingsView />;
+                        return renderStandingsView();
                 }
             };
 

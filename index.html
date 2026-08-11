@@ -1339,6 +1339,7 @@
             const [newTournamentName, setNewTournamentName] = useState('');
             const [cloneSourceTournamentId, setCloneSourceTournamentId] = useState('');
             const [creationMode, setCreationMode] = useState('clone');
+            const [isCreatingTournament, setIsCreatingTournament] = useState(false);
 
             // Modo Oscuro / Claro con persistencia
             const [darkMode, setDarkMode] = useState(() => localStorage.getItem('theme') === 'dark');
@@ -1570,6 +1571,7 @@
             };
 
             const createLeaguesAndTeams = async () => {
+                if (isCreatingTournament) return;
                 if (!user || !appId || !window.firebaseApp?.db) return;
                 let tName = newTournamentName.trim();
                 if (!tName) {
@@ -1577,6 +1579,7 @@
                 }
                 if (!tName) return;
 
+                setIsCreatingTournament(true);
                 const { doc, setDoc } = window.firebaseModules;
                 const db = window.firebaseApp.db;
                 const tournamentId = 'tourn_' + Date.now();
@@ -1670,6 +1673,8 @@
                 } catch (e) {
                     console.error("Error al crear el torneo:", e);
                     showMessage("Error al crear el torneo.");
+                } finally {
+                    setIsCreatingTournament(false);
                 }
             };
 
@@ -3382,9 +3387,22 @@
                                             </div>
                                         )}
 
-                                        <button onClick={createLeaguesAndTeams} className="btn-primary w-full flex items-center justify-center py-3">
-                                            <PlusIcon className="w-5 h-5 mr-2" />
-                                            {creationMode === 'clone' && tournaments.length > 0 ? 'Crear y Clonar Equipos' : 'Crear Torneo'}
+                                        <button 
+                                            onClick={createLeaguesAndTeams} 
+                                            disabled={isCreatingTournament} 
+                                            className={`btn-primary w-full flex items-center justify-center py-3 ${isCreatingTournament ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                        >
+                                            {isCreatingTournament ? (
+                                                <>
+                                                    <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white mr-2"></div>
+                                                    Clonando y creando torneo...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <PlusIcon className="w-5 h-5 mr-2" />
+                                                    {creationMode === 'clone' && tournaments.length > 0 ? 'Crear y Clonar Equipos' : 'Crear Torneo'}
+                                                </>
+                                            )}
                                         </button>
                                     </div>
                                 </div>

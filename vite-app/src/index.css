@@ -11,6 +11,22 @@
     font-family: 'Outfit', sans-serif;
 }
 
+/* Animación de Ticker Marquee Infinito */
+@keyframes marquee {
+    0% { transform: translateX(0%); }
+    100% { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+    display: inline-flex;
+    width: max-content;
+    animation: marquee 35s linear infinite;
+}
+
+.animate-marquee:hover {
+    animation-play-state: paused;
+}
+
 @layer utilities {
     .nav-button {
         @apply transition-all duration-300 font-medium;

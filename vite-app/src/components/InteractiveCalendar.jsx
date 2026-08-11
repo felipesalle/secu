@@ -83,7 +83,7 @@ export const InteractiveCalendar = ({ matches, selectedDateFilter, onSelectDate,
                 </div>
             </div>
 
-            <div className="grid grid-cols-7 gap-2 text-center text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 font-outfit pb-2">
+            <div className="grid grid-cols-7 gap-1 sm:gap-2 text-center text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 font-outfit pb-2">
                 <span>DOM</span>
                 <span>LUN</span>
                 <span>MAR</span>
@@ -93,10 +93,10 @@ export const InteractiveCalendar = ({ matches, selectedDateFilter, onSelectDate,
                 <span>SÁB</span>
             </div>
 
-            <div className="grid grid-cols-7 gap-2 min-h-[260px]">
+            <div className="grid grid-cols-7 gap-1 sm:gap-2 min-h-[220px] sm:min-h-[260px]">
                 {daysArray.map((day, idx) => {
                     if (day === null) {
-                        return <div key={`empty-${idx}`} className="h-16 rounded-xl"></div>;
+                        return <div key={`empty-${idx}`} className="h-12 sm:h-16 rounded-lg sm:rounded-xl"></div>;
                     }
 
                     const monthStr = String(month + 1).padStart(2, '0');
@@ -112,19 +112,27 @@ export const InteractiveCalendar = ({ matches, selectedDateFilter, onSelectDate,
                             <button
                                 key={dateKey}
                                 onClick={() => onSelectDate(isSelected ? '' : dateKey)}
-                                className={`h-16 rounded-2xl flex flex-col items-center justify-center transition-all duration-200 shadow-md cursor-pointer ${
+                                className={`h-12 sm:h-16 p-1 rounded-xl sm:rounded-2xl flex flex-col items-center justify-center transition-all duration-200 shadow-md cursor-pointer ${
                                     isInauguration
-                                        ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 ring-4 ring-amber-400/60 scale-105 font-bold'
+                                        ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 ring-2 sm:ring-4 ring-amber-400/60 scale-105 font-bold'
                                         : isSelected
-                                        ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white ring-4 ring-blue-400/50 scale-105 font-bold'
+                                        ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white ring-2 sm:ring-4 ring-blue-400/50 scale-105 font-bold'
                                         : 'bg-gradient-to-r from-[#101097] to-[#2a2ad9] text-white hover:scale-105 hover:shadow-lg'
                                 }`}
                             >
-                                <span className="text-base font-extrabold font-outfit leading-none">{day}</span>
-                                <span className={`text-[10px] mt-1 px-2 py-0.5 rounded-full font-semibold whitespace-nowrap ${isInauguration ? 'bg-slate-950/20 text-slate-950 font-bold' : 'bg-white/20'}`}>
-                                    {isInauguration 
-                                        ? `🎉 Inauguración${count > 0 ? ` (${count})` : ''}`
-                                        : `${count} ${count === 1 ? 'partido' : 'partidos'}`}
+                                <span className="text-xs sm:text-base font-extrabold font-outfit leading-none">{day}</span>
+                                <span className={`text-[8px] sm:text-[10px] mt-0.5 sm:mt-1 px-1 sm:px-2 py-0.5 rounded-full font-semibold max-w-full truncate ${isInauguration ? 'bg-slate-950/20 text-slate-950 font-bold' : 'bg-white/20'}`}>
+                                    {isInauguration ? (
+                                        <>
+                                            <span className="sm:hidden">🎉 {count > 0 ? count : ''}</span>
+                                            <span className="hidden sm:inline">🎉 Inauguración{count > 0 ? ` (${count})` : ''}</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span className="sm:hidden">{count} p.</span>
+                                            <span className="hidden sm:inline">{count} {count === 1 ? 'partido' : 'partidos'}</span>
+                                        </>
+                                    )}
                                 </span>
                             </button>
                         );
@@ -133,7 +141,7 @@ export const InteractiveCalendar = ({ matches, selectedDateFilter, onSelectDate,
                     return (
                         <div
                             key={dateKey}
-                            className="h-16 rounded-xl border border-slate-100 dark:border-slate-800/40 flex items-center justify-center text-sm font-medium text-slate-400 dark:text-slate-600 opacity-60"
+                            className="h-12 sm:h-16 rounded-xl border border-slate-100 dark:border-slate-800/40 flex items-center justify-center text-xs sm:text-sm font-medium text-slate-400 dark:text-slate-600 opacity-60"
                         >
                             {day}
                         </div>

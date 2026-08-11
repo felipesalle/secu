@@ -750,26 +750,26 @@ export default function App() {
 
         return (
             <div className="space-y-8 animate-fade-in">
-                {/* Navegación Sub-Admin */}
-                <div className="flex flex-wrap items-center justify-between gap-4 bg-white/90 dark:bg-slate-800/80 p-4 rounded-2xl shadow-md border border-slate-100 dark:border-slate-700/60">
-                    <div className="flex items-center space-x-2">
-                        <button onClick={() => setAdminTab('tournaments')} className={`px-4 py-2 rounded-xl text-xs font-bold font-outfit transition-all ${adminTab === 'tournaments' ? 'bg-[#101097] text-white shadow-md' : 'bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-300'}`}>
+                {/* Navegación Sub-Admin Adaptativa */}
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white/90 dark:bg-slate-800/80 p-3 sm:p-4 rounded-2xl shadow-md border border-slate-100 dark:border-slate-700/60">
+                    <div className="flex items-center space-x-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-none max-w-full">
+                        <button onClick={() => setAdminTab('tournaments')} className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-bold font-outfit whitespace-nowrap shrink-0 transition-all ${adminTab === 'tournaments' ? 'bg-[#101097] text-white shadow-md' : 'bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-300'}`}>
                             🏆 Torneos & Backup
                         </button>
-                        <button onClick={() => setAdminTab('teams')} className={`px-4 py-2 rounded-xl text-xs font-bold font-outfit transition-all ${adminTab === 'teams' ? 'bg-[#101097] text-white shadow-md' : 'bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-300'}`}>
+                        <button onClick={() => setAdminTab('teams')} className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-bold font-outfit whitespace-nowrap shrink-0 transition-all ${adminTab === 'teams' ? 'bg-[#101097] text-white shadow-md' : 'bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-300'}`}>
                             👥 Plantillas & Equipos
                         </button>
-                        <button onClick={() => setAdminTab('schedule')} className={`px-4 py-2 rounded-xl text-xs font-bold font-outfit transition-all ${adminTab === 'schedule' ? 'bg-[#101097] text-white shadow-md' : 'bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-300'}`}>
+                        <button onClick={() => setAdminTab('schedule')} className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-bold font-outfit whitespace-nowrap shrink-0 transition-all ${adminTab === 'schedule' ? 'bg-[#101097] text-white shadow-md' : 'bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-300'}`}>
                             ⚽ Calendario & Partidos
                         </button>
-                        <button onClick={() => setAdminTab('reports')} className={`px-4 py-2 rounded-xl text-xs font-bold font-outfit transition-all ${adminTab === 'reports' ? 'bg-[#101097] text-white shadow-md' : 'bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-300'}`}>
+                        <button onClick={() => setAdminTab('reports')} className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-bold font-outfit whitespace-nowrap shrink-0 transition-all ${adminTab === 'reports' ? 'bg-[#101097] text-white shadow-md' : 'bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-300'}`}>
                             📄 Reportes & PDFs
                         </button>
                     </div>
 
-                    <div className="flex items-center space-x-3">
-                        <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 font-outfit">● Admin Conectado ({user.email})</span>
-                        <button onClick={handleLogout} className="btn-danger py-1.5 px-3 text-xs">Cerrar Sesión</button>
+                    <div className="flex items-center justify-between sm:justify-end space-x-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 dark:border-slate-700">
+                        <span className="text-[11px] sm:text-xs font-bold text-emerald-600 dark:text-emerald-400 font-outfit truncate">● Admin ({user.email})</span>
+                        <button onClick={handleLogout} className="btn-danger py-1.5 px-3 text-xs whitespace-nowrap">Cerrar Sesión</button>
                     </div>
                 </div>
 
@@ -1074,6 +1074,7 @@ export default function App() {
                                 players={visiblePlayers}
                                 getLeagueName={getLeagueName}
                                 getTeamName={getTeamName}
+                                getTeamLogo={getTeamLogo}
                                 getPlayersByTeam={getPlayersByTeam}
                                 showMessage={showMessage}
                                 selectedDateFilter={selectedDateFilter}
@@ -1243,36 +1244,46 @@ export default function App() {
         <div className="min-h-screen text-slate-800 dark:text-slate-100 transition-colors duration-300">
             {/* Header Principal */}
             <header className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 sticky top-0 z-40 shadow-sm">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                        <img src="https://i.imgur.com/pbiHVPL.png" alt="Logo Colegio La Salle" className="w-10 h-10 object-contain drop-shadow-md" />
+                <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2.5 sm:py-3.5 flex flex-wrap items-center justify-between gap-2.5">
+                    <div className="flex items-center space-x-2.5 sm:space-x-3">
+                        <img src="https://i.imgur.com/pbiHVPL.png" alt="Logo Colegio La Salle" className="w-8 h-8 sm:w-10 sm:h-10 object-contain drop-shadow-md" />
                         <div>
-                            <div className="flex items-center space-x-2">
-                                <h1 className="text-lg md:text-xl font-black font-outfit text-[#101097] dark:text-blue-400 leading-none">
+                            <div className="flex items-center space-x-1.5 sm:space-x-2">
+                                <h1 className="text-base sm:text-lg md:text-xl font-black font-outfit text-[#101097] dark:text-blue-400 leading-none">
                                     Ligas <span className="text-[#CE0E2D]">La Salle</span>
                                 </h1>
-                                <span className="text-[10px] font-extrabold uppercase tracking-widest px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/60 text-[#101097] dark:text-blue-300 font-outfit">
+                                <span className="text-[9px] sm:text-[10px] font-extrabold uppercase tracking-widest px-1.5 sm:px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/60 text-[#101097] dark:text-blue-300 font-outfit">
                                     SECUNDARIA
                                 </span>
                             </div>
                         </div>
                     </div>
 
-                    {/* Switcher de Vistas */}
-                    <div className="flex items-center space-x-3">
-                        <button onClick={() => setView('standings')} className={`nav-button px-4 py-2 rounded-xl text-xs flex items-center space-x-1 ${view === 'standings' ? 'active' : 'text-slate-600 dark:text-slate-300'}`}>
-                            <span>⭐</span>
-                            <span>Clasificación</span>
-                        </button>
-                        <button onClick={() => setView('admin')} className={`nav-button px-4 py-2 rounded-xl text-xs flex items-center space-x-1 ${view === 'admin' ? 'active' : 'text-slate-600 dark:text-slate-300'}`}>
-                            <span>🔒</span>
-                            <span>Admin</span>
-                        </button>
-                        <button onClick={() => setDarkMode(!darkMode)} className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:scale-105 transition-all">
+                    {/* Switcher de Vistas Adaptativo */}
+                    <div className="flex items-center space-x-1.5 sm:space-x-3">
+                        <div className="bg-slate-100 dark:bg-slate-800 p-1 rounded-xl flex items-center space-x-1 border border-slate-200/60 dark:border-slate-700/60">
+                            <button 
+                                onClick={() => setView('standings')} 
+                                className={`px-2.5 sm:px-4 py-1.5 rounded-lg text-xs font-bold font-outfit flex items-center space-x-1 transition-all ${view === 'standings' ? 'bg-[#101097] text-white shadow-sm' : 'text-slate-600 dark:text-slate-300 hover:text-[#101097]'}`}
+                            >
+                                <span>⭐</span>
+                                <span className="text-[11px] sm:text-xs">Clasificación</span>
+                            </button>
+                            <button 
+                                onClick={() => setView('admin')} 
+                                className={`px-2.5 sm:px-4 py-1.5 rounded-lg text-xs font-bold font-outfit flex items-center space-x-1 transition-all ${view === 'admin' ? 'bg-[#101097] text-white shadow-sm' : 'text-slate-600 dark:text-slate-300 hover:text-[#101097]'}`}
+                            >
+                                <span>🔒</span>
+                                <span className="text-[11px] sm:text-xs">Admin</span>
+                            </button>
+                        </div>
+
+                        <button onClick={() => setDarkMode(!darkMode)} className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:scale-105 transition-all text-xs sm:text-sm" title="Cambiar Tema">
                             {darkMode ? '☀️' : '🌙'}
                         </button>
+
                         {user && (
-                            <button onClick={handleLogout} className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs transition-all shadow-sm">
+                            <button onClick={handleLogout} className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs transition-all shadow-sm">
                                 Salir
                             </button>
                         )}

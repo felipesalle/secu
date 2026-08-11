@@ -4,7 +4,7 @@ import { db, APP_ID } from '../config/firebase';
 import { sendTelegramNotification, sortLeagues } from '../config/constants';
 import { SportIcon, EditIcon } from './Icons';
 
-export const MatchesView = ({ matches, leagues, teams, players, getLeagueName, getTeamName, getPlayersByTeam, showMessage, selectedDateFilter, selectedLeagueFilter, inaugurationDate, user }) => {
+export const MatchesView = ({ matches, leagues, teams, players, getLeagueName, getTeamName, getTeamLogo, getPlayersByTeam, showMessage, selectedDateFilter, selectedLeagueFilter, inaugurationDate, user }) => {
     const [selectedMatch, setSelectedMatch] = useState(null);
     const [scoreHome, setScoreHome] = useState(0);
     const [scoreAway, setScoreAway] = useState(0);
@@ -187,50 +187,62 @@ export const MatchesView = ({ matches, leagues, teams, players, getLeagueName, g
                                         <div className="space-y-3">
                                             {leagueMatches.map(match => {
                                                 const isFriendly = match.isFriendly || (inaugurationDate && match.date && match.date < inaugurationDate);
+                                                const homeLogo = getTeamLogo ? getTeamLogo(match.homeTeamId) : '';
+                                                const awayLogo = getTeamLogo ? getTeamLogo(match.awayTeamId) : '';
+
                                                 return (
                                                     <div
                                                         key={match.id}
-                                                        className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700/80 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:shadow-md transition-all"
+                                                        className="bg-white dark:bg-slate-800 p-3.5 sm:p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700/80 flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4 hover:shadow-md transition-all"
                                                     >
-                                                        <div className="flex items-center space-x-3 min-w-[140px]">
-                                                            <p className="text-xs font-bold text-slate-500 dark:text-slate-400 font-outfit">
+                                                        <div className="flex items-center justify-between sm:justify-start space-x-3 min-w-[130px]">
+                                                            <p className="text-[11px] sm:text-xs font-bold text-slate-500 dark:text-slate-400 font-outfit">
                                                                 📅 {match.date}
                                                             </p>
                                                             {isFriendly ? (
-                                                                <span className="text-[10px] font-bold font-outfit uppercase tracking-wider px-2 py-0.5 rounded-md bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-700/60">
+                                                                <span className="text-[9px] sm:text-[10px] font-bold font-outfit uppercase tracking-wider px-2 py-0.5 rounded-md bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-700/60">
                                                                     🤝 Amistoso
                                                                 </span>
                                                             ) : (
-                                                                <span className="text-[10px] font-bold font-outfit uppercase tracking-wider px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700/60">
+                                                                <span className="text-[9px] sm:text-[10px] font-bold font-outfit uppercase tracking-wider px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700/60">
                                                                     🏆 Oficial
                                                                 </span>
                                                             )}
                                                         </div>
 
-                                                        <div className="flex-1 flex items-center justify-center space-x-4">
-                                                            <div className="flex-1 text-right flex items-center justify-end space-x-2">
-                                                                <span className="font-bold font-outfit text-slate-800 dark:text-white text-sm md:text-base truncate">
+                                                        <div className="flex-1 flex items-center justify-center space-x-2 sm:space-x-4">
+                                                            {/* Equipo Local */}
+                                                            <div className="flex-1 text-right flex items-center justify-end space-x-1.5 sm:space-x-2 min-w-0">
+                                                                <span className="font-bold font-outfit text-slate-800 dark:text-white text-xs sm:text-base truncate">
                                                                     {getTeamName(match.homeTeamId)}
                                                                 </span>
+                                                                {homeLogo && (
+                                                                    <img src={homeLogo} alt="" className="w-6 h-6 sm:w-8 sm:h-8 rounded-full object-contain bg-white p-0.5 shadow-sm shrink-0" />
+                                                                )}
                                                             </div>
 
-                                                            <div className="bg-slate-100 dark:bg-slate-900 px-4 py-1.5 rounded-xl font-extrabold font-outfit text-lg text-[#101097] dark:text-blue-400 min-w-[80px] text-center shadow-inner">
+                                                            {/* Marcador Badge */}
+                                                            <div className="bg-slate-100 dark:bg-slate-900 px-2.5 sm:px-4 py-1 sm:py-1.5 rounded-xl font-extrabold font-outfit text-sm sm:text-lg text-[#101097] dark:text-blue-400 min-w-[65px] sm:min-w-[80px] text-center shadow-inner shrink-0">
                                                                 {match.scoreHome !== null ? `${match.scoreHome} - ${match.scoreAway}` : 'VS'}
                                                             </div>
 
-                                                            <div className="flex-1 text-left flex items-center justify-start space-x-2">
-                                                                <span className="font-bold font-outfit text-slate-800 dark:text-white text-sm md:text-base truncate">
+                                                            {/* Equipo Visitante */}
+                                                            <div className="flex-1 text-left flex items-center justify-start space-x-1.5 sm:space-x-2 min-w-0">
+                                                                {awayLogo && (
+                                                                    <img src={awayLogo} alt="" className="w-6 h-6 sm:w-8 sm:h-8 rounded-full object-contain bg-white p-0.5 shadow-sm shrink-0" />
+                                                                )}
+                                                                <span className="font-bold font-outfit text-slate-800 dark:text-white text-xs sm:text-base truncate">
                                                                     {getTeamName(match.awayTeamId)}
                                                                 </span>
                                                             </div>
                                                         </div>
 
-                                                        <div className="flex items-center space-x-2 justify-end">
+                                                        <div className="flex items-center space-x-2 justify-end pt-1 sm:pt-0 border-t sm:border-t-0 border-slate-100 dark:border-slate-700/50">
                                                             <button
                                                                 onClick={() => handleEditMatch(match)}
-                                                                className="btn-primary text-xs py-2 px-3 flex items-center space-x-1"
+                                                                className="btn-primary text-xs py-1.5 px-3 flex items-center space-x-1"
                                                             >
-                                                                <EditIcon />
+                                                                <EditIcon className="w-3.5 h-3.5" />
                                                                 <span>Editar</span>
                                                             </button>
                                                         </div>

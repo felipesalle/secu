@@ -3546,69 +3546,150 @@
                     {/* Sub-pestaña 4: Reportes & PDFs */}
                     {adminTab === 'reports' && (
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-fade-in-up">
-                            <div className="card p-8 space-y-4">
-                                <h3 className="text-xl font-bold font-outfit text-slate-800 dark:text-white flex items-center border-b border-slate-100 dark:border-slate-700 pb-3">Informes Impresos (PDF)</h3>
-                                <div className="space-y-6">
-                                    <div>
-                                        <p className="text-sm text-slate-600 dark:text-slate-300 mb-3 font-medium">Reporte de Próximos Partidos por Fecha (con Escudos):</p>
-                                        <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
-                                            <input type="date" value={upcomingMatchesDate} onChange={(e) => setUpcomingMatchesDate(e.target.value)} className="input-modern flex-1" />
-                                            <button onClick={() => generateUpcomingMatchesPdf(visibleMatches, visibleLeagues)} className="btn-primary whitespace-nowrap">📄 PDF</button>
-                                            <button onClick={() => printUpcomingMatchesWindow(visibleMatches, visibleLeagues)} className="btn-secondary whitespace-nowrap bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-4 rounded-xl shadow-md transition-all">🖨️ Vista Previa e Imprimir</button>
-                                        </div>
-                                    </div>
-                                    <div className="border-t border-slate-100 dark:border-slate-700 pt-6">
-                                        <p className="text-sm text-slate-600 dark:text-slate-300 mb-3 font-medium">Reporte Completo de Clasificaciones:</p>
-                                        <button onClick={() => generateStandingsAndTopScorersPdf(visibleLeagues, visibleTeams, visibleMatches, visiblePlayers)} className="btn-primary w-full">PDF Clasificación y Goleo</button>
+                            
+                            {/* Card 1: Próximos Partidos */}
+                            <div className="card p-6 space-y-4 border-t-4 border-blue-600 shadow-md">
+                                <h3 className="text-xl font-bold font-outfit text-slate-800 dark:text-white flex items-center border-b border-slate-100 dark:border-slate-700 pb-3">
+                                    🗓️ Reporte de Próximos Partidos (con Escudos)
+                                </h3>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">
+                                    Genera una lámina imprimible o PDF con el rol de juegos programados para una fecha específica, incluyendo los escudos de cada equipo.
+                                </p>
+                                <div className="p-4 bg-slate-50 dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3">
+                                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 font-outfit">
+                                        Selecciona la Fecha del Partido:
+                                    </label>
+                                    <input 
+                                        type="date" 
+                                        value={upcomingMatchesDate} 
+                                        onChange={(e) => setUpcomingMatchesDate(e.target.value)} 
+                                        className="input-modern" 
+                                    />
+                                    <div className="flex flex-col sm:flex-row gap-3 pt-1">
+                                        <button 
+                                            onClick={() => generateUpcomingMatchesPdf(visibleMatches, visibleLeagues)} 
+                                            className="btn-primary flex-1 flex items-center justify-center text-sm"
+                                        >
+                                            📄 Descargar PDF
+                                        </button>
+                                        <button 
+                                            onClick={() => printUpcomingMatchesWindow(visibleMatches, visibleLeagues)} 
+                                            className="btn-secondary flex-1 flex items-center justify-center text-sm bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-4 rounded-xl shadow-md transition-all"
+                                        >
+                                            🖨️ Vista Previa e Imprimir
+                                        </button>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="card p-8 space-y-4">
-                                <h3 className="text-xl font-bold font-outfit text-slate-800 dark:text-white flex items-center border-b border-slate-100 dark:border-slate-700 pb-3">Cédulas de Arbitraje</h3>
-                                <p className="text-sm text-slate-600 dark:text-slate-300">Imprimir cédulas oficiales de partido con listas de jugadores, espacios para marcador, observaciones y firmas.</p>
-                                <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
-                                    <input type="date" value={refereeMatchDate} onChange={(e) => setRefereeMatchDate(e.target.value)} className="input-modern flex-1" />
-                                    <button onClick={() => generateRefereeSheetPdf(visibleMatches, visiblePlayers, visibleLeagues)} className="btn-primary whitespace-nowrap">📄 PDF</button>
-                                    <button onClick={() => printRefereeSheetWindow(visibleMatches, visiblePlayers, visibleLeagues)} className="btn-secondary whitespace-nowrap bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-4 rounded-xl shadow-md transition-all">🖨️ Vista Previa e Imprimir</button>
+                            {/* Card 2: Cédulas de Arbitraje */}
+                            <div className="card p-6 space-y-4 border-t-4 border-purple-600 shadow-md">
+                                <h3 className="text-xl font-bold font-outfit text-slate-800 dark:text-white flex items-center border-b border-slate-100 dark:border-slate-700 pb-3">
+                                    ⚖️ Cédulas Oficiales de Arbitraje
+                                </h3>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">
+                                    Imprime las cédulas de arbitraje para la mesa de control con listas de alumnos, casillas de goles/puntos, observaciones y firmas.
+                                </p>
+                                <div className="p-4 bg-slate-50 dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3">
+                                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 font-outfit">
+                                        Selecciona la Fecha de los Partidos:
+                                    </label>
+                                    <input 
+                                        type="date" 
+                                        value={refereeMatchDate} 
+                                        onChange={(e) => setRefereeMatchDate(e.target.value)} 
+                                        className="input-modern" 
+                                    />
+                                    <div className="flex flex-col sm:flex-row gap-3 pt-1">
+                                        <button 
+                                            onClick={() => generateRefereeSheetPdf(visibleMatches, visiblePlayers, visibleLeagues)} 
+                                            className="btn-primary flex-1 flex items-center justify-center text-sm"
+                                        >
+                                            📄 Descargar PDF Cédulas
+                                        </button>
+                                        <button 
+                                            onClick={() => printRefereeSheetWindow(visibleMatches, visiblePlayers, visibleLeagues)} 
+                                            className="btn-secondary flex-1 flex items-center justify-center text-sm bg-purple-600 hover:bg-purple-700 text-white font-bold py-2.5 px-4 rounded-xl shadow-md transition-all"
+                                        >
+                                            🖨️ Vista Previa e Imprimir
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
 
-                            {/* Card 3: Roster de Equipos y Jugadores */}
-                            <div className="card p-8 space-y-4 lg:col-span-2">
+                            {/* Card 3: Tabla de Clasificación y Tabla de Goleo */}
+                            <div className="card p-6 space-y-4 border-t-4 border-emerald-600 shadow-md lg:col-span-2">
+                                <h3 className="text-xl font-bold font-outfit text-slate-800 dark:text-white flex items-center border-b border-slate-100 dark:border-slate-700 pb-3">
+                                    📊 Reporte General de Clasificaciones y Máximos Anotadores
+                                </h3>
+                                <div className="p-5 bg-slate-50 dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4">
+                                    <div className="space-y-1 text-center md:text-left">
+                                        <h4 className="font-bold text-slate-800 dark:text-white font-outfit">Informe Completo del Torneo</h4>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                                            Exporta en formato PDF la tabla general de posiciones actualizada de todas las ligas de Secundaria y la tabla de goleo individual.
+                                        </p>
+                                    </div>
+                                    <button 
+                                        onClick={() => generateStandingsAndTopScorersPdf(visibleLeagues, visibleTeams, visibleMatches, visiblePlayers)} 
+                                        className="btn-primary whitespace-nowrap px-6 py-3 text-sm bg-gradient-to-r from-emerald-600 to-teal-700"
+                                    >
+                                        🏆 Generar PDF de Clasificación y Goleo
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Card 4: Roster de Inscripción de Alumnos */}
+                            <div className="card p-6 space-y-4 border-t-4 border-indigo-600 shadow-md lg:col-span-2">
                                 <h3 className="text-xl font-bold font-outfit text-slate-800 dark:text-white flex items-center border-b border-slate-100 dark:border-slate-700 pb-3">
                                     📋 Cédula de Inscripción: Equipos y Jugadores por Liga
                                 </h3>
-                                <p className="text-sm text-slate-600 dark:text-slate-300">
-                                    Genera la lista oficial y ordenada de todas las ligas, mostrando cada equipo con su escudo (Champions League) y la nómina completa de alumnos inscritos.
-                                </p>
-                                <div className="flex flex-wrap gap-4 pt-2">
-                                    <button onClick={() => generateTeamsAndPlayersRosterPdf(visibleLeagues, visibleTeams, visiblePlayers)} className="btn-primary flex-1 min-w-[220px] flex items-center justify-center">
-                                        📄 Descargar PDF Roster Completo
-                                    </button>
-                                    <button onClick={() => printTeamsAndPlayersRosterWindow(visibleLeagues, visibleTeams, visiblePlayers)} className="btn-primary flex-1 min-w-[220px] flex items-center justify-center bg-gradient-to-r from-indigo-700 to-blue-800">
-                                        🖨️ Imprimir / Vista Previa Roster (HTML)
-                                    </button>
+                                <div className="p-5 bg-slate-50 dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                                        Genera la lista oficial y ordenada de todas las ligas, mostrando cada equipo con su escudo asignado (Champions League) y la nómina completa de alumnos inscritos.
+                                    </p>
+                                    <div className="flex flex-wrap gap-4">
+                                        <button 
+                                            onClick={() => generateTeamsAndPlayersRosterPdf(visibleLeagues, visibleTeams, visiblePlayers)} 
+                                            className="btn-primary flex-1 min-w-[220px] flex items-center justify-center text-sm"
+                                        >
+                                            📄 Descargar PDF Roster Completo
+                                        </button>
+                                        <button 
+                                            onClick={() => printTeamsAndPlayersRosterWindow(visibleLeagues, visibleTeams, visiblePlayers)} 
+                                            className="btn-primary flex-1 min-w-[220px] flex items-center justify-center text-sm bg-gradient-to-r from-indigo-700 to-blue-800"
+                                        >
+                                            🖨️ Imprimir / Vista Previa Roster (HTML)
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
 
-                            {/* Card 4: Resumen de la Jornada para Redes Sociales */}
-                            <div className="card p-8 space-y-4 lg:col-span-2 border-l-4 border-amber-500">
+                            {/* Card 5: Resumen de la Jornada para Redes Sociales */}
+                            <div className="card p-6 space-y-4 border-t-4 border-amber-500 shadow-md lg:col-span-2">
                                 <h3 className="text-xl font-bold font-outfit text-slate-800 dark:text-white flex items-center border-b border-slate-100 dark:border-slate-700 pb-3">
                                     📱 Resumen de la Jornada para Redes Sociales (Facebook / Instagram)
                                 </h3>
-                                <p className="text-sm text-slate-600 dark:text-slate-300">
-                                    Genera la tarjeta visual del resumen semanal con los partidos jugados por grupo, máximos anotadores (incluyendo empates) y la programación completa de la próxima jornada.
-                                </p>
-                                <div className="flex flex-wrap gap-4 pt-2">
-                                    <button onClick={() => printFacebookSummaryWindow(visibleMatches, visibleLeagues, visibleTeams, visiblePlayers, upcomingMatchesDate)} className="btn-primary flex-1 min-w-[220px] flex items-center justify-center bg-gradient-to-r from-amber-600 to-amber-700 text-white font-bold">
-                                        📷 Generar Tarjeta Visual (Vista Previa / Imprimir)
-                                    </button>
-                                    <button onClick={() => copyFacebookSummaryText(visibleMatches, visibleLeagues, visibleTeams, visiblePlayers, upcomingMatchesDate)} className="btn-secondary flex-1 min-w-[220px] flex items-center justify-center bg-slate-800 hover:bg-slate-900 text-white font-bold py-2.5 px-4 rounded-xl shadow-md transition-all">
-                                        📋 Copiar Texto Formateado para Facebook
-                                    </button>
+                                <div className="p-5 bg-slate-50 dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                                        Genera la tarjeta visual del resumen semanal con los partidos jugados por grupo, máximos anotadores (incluyendo empates) y la programación completa de la próxima jornada.
+                                    </p>
+                                    <div className="flex flex-wrap gap-4">
+                                        <button 
+                                            onClick={() => printFacebookSummaryWindow(visibleMatches, visibleLeagues, visibleTeams, visiblePlayers, upcomingMatchesDate)} 
+                                            className="btn-primary flex-1 min-w-[220px] flex items-center justify-center text-sm bg-gradient-to-r from-amber-600 to-amber-700 text-white font-bold"
+                                        >
+                                            📷 Generar Tarjeta Visual (Vista Previa / Imprimir)
+                                        </button>
+                                        <button 
+                                            onClick={() => copyFacebookSummaryText(visibleMatches, visibleLeagues, visibleTeams, visiblePlayers, upcomingMatchesDate)} 
+                                            className="btn-secondary flex-1 min-w-[220px] flex items-center justify-center text-sm bg-slate-800 hover:bg-slate-900 text-white font-bold py-2.5 px-4 rounded-xl shadow-md transition-all"
+                                        >
+                                            📋 Copiar Texto Formateado para Facebook
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
+
                         </div>
                     )}
                 </div>

@@ -1,0 +1,25 @@
+import React from 'react';
+import { CalendarIcon } from './Icons';
+
+export const Ticker = ({ matches, getTeamName }) => {
+    const today = new Date().toISOString().split('T')[0];
+    const upcoming = matches.filter(m => m.date >= today && m.scoreHome === null).slice(0, 15);
+    if (upcoming.length === 0) return null;
+    const items = [...upcoming, ...upcoming];
+
+    return (
+        <div className="bg-slate-900 text-white py-2 overflow-hidden whitespace-nowrap relative border-b border-slate-800">
+            <div className="ticker-track flex animate-marquee space-x-8">
+                {items.map((m, i) => (
+                    <span key={i} className="text-xs font-medium flex items-center inline-flex space-x-2">
+                        <CalendarIcon className="w-4 h-4 text-amber-400" />
+                        <span className="text-slate-400">{m.date}</span>
+                        <span className="font-bold font-outfit text-white">{getTeamName(m.homeTeamId)}</span>
+                        <span className="text-amber-400 font-bold">VS</span>
+                        <span className="font-bold font-outfit text-white">{getTeamName(m.awayTeamId)}</span>
+                    </span>
+                ))}
+            </div>
+        </div>
+    );
+};

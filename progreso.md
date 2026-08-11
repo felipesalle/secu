@@ -92,7 +92,18 @@ Todos los desarrollos descritos a continuación han sido implementados, probados
 
 ---
 
-## 🛠️ 7. Resumen de Commits Recientes en GitHub
+## 📱 7. Rediseño 100% Responsivo y Adaptativo para Móviles y Smartphones
+- **Optimizaciones para Dispositivos Móviles (iOS y Android)**:
+  - **Barra de Encabezado (Header)**: Disposición fluida con controles segmentados que previenen desbordamientos en pantallas desde 320px hasta 480px.
+  - **Hero Banner Deportivo**: Tamaño de tipografía adaptativo, ocultamiento inteligente del emoji gigante en móviles para optimizar espacio vertical y cuadrícula de estadísticas fluida (`grid-cols-2`).
+  - **Calendario Interactivo de Jornadas**: Reducción de márgenes (`gap-1`), alturas adaptativas (`h-12`) y badges táctiles comprimidos (`🎉 (8)`, `8 p.`) para evitar que el grid de 7 días distorsione el ancho de pantalla.
+  - **Tabla de Clasificación (StandingsTable)**: Desplazamiento táctil horizontal nativo (`-webkit-overflow-scrolling: touch`), truncamiento dinámico de nombres de equipos largos e indicador visual para móviles (*"👉 Desliza la tabla horizontalmente para ver más estadísticas"*).
+  - **Lista de Marcadores y Partidos (MatchesView)**: Integración de escudos de equipos en cada tarjeta de partido y diseño flexbox adaptativo para nombres y marcadores en pantallas estrechas.
+  - **Navegación Sub-Admin**: Pestañas con desplazamiento horizontal suave (`overflow-x-auto`) sin amontonamiento ni saltos de línea desordenados.
+
+---
+
+## 🛠️ 8. Resumen de Commits Recientes en GitHub
 - `7ee59eb`: Integrar sistema de notificaciones automáticas por Telegram (7 puntos de alerta).
 - `df7ed13`: Corregir contraste de color de texto en textarea de AddPlayersModal.
 - `9bb9275`: Corregir contraste de texto en botones de navegación del header.
@@ -106,6 +117,8 @@ Todos los desarrollos descritos a continuación han sido implementados, probados
 - `53fbeea`: Excluir feriados oficiales SEP (16 de septiembre, 5 de mayo) de la programación de partidos en miércoles.
 - `f1e3670`: Solucionar pérdida de foco en input de fecha de inauguración usando estado local inaugInputDate y botones Guardar/Quitar.
 - `03689c5`: Corregir reversión matemática de partidos en sábado a su miércoles original (-3 días) al cambiar fecha de inauguración.
+- `fd3cbc5`: Agregar animación continua de marquee al banner de próximos partidos.
+- `a25b3bd`: Optimización de diseño 100% responsivo y adaptativo para celulares y móviles (Header, Hero, Calendario, Standings, Marcadores).
 
 ---
 

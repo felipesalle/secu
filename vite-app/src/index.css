@@ -20,7 +20,7 @@
 .animate-marquee {
     display: inline-flex;
     width: max-content;
-    animation: marquee 35s linear infinite;
+    animation: marquee 100s linear infinite;
 }
 
 .animate-marquee:hover {

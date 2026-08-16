@@ -1317,12 +1317,13 @@ export default function App() {
                 onSelectClub={async (club) => {
                     if (selectedTeamForClub) {
                         await setDoc(doc(db, `artifacts/${APP_ID}/public/data/teams`, selectedTeamForClub.id), {
+                            name: club.name,
                             logoUrl: club.logoUrl,
                             clubId: club.id,
                             shirtColorName: club.shirtColorName || 'Royal',
                             shirtColorHex: club.shirtColorHex || '#1565C0'
                         }, { merge: true });
-                        showMessage(`Club ${club.name} (Playera ${club.shirtColorName || ''}) asignado a ${selectedTeamForClub.name}.`);
+                        showMessage(`¡Club cambiado con éxito a ${club.name}! (Playera: ${club.shirtColorName || ''})`);
                     }
                 }}
             />

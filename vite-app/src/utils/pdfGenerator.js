@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { getSportScoringInfo } from '../config/constants';
+import { getSportScoringInfo, getTeamShirtColor } from '../config/constants';
 
 export const calculateStandings = (leagueId, teams, matches, inaugurationDate) => {
     const leagueTeams = teams.filter(t => t.leagueId === leagueId);
@@ -40,6 +40,8 @@ export const calculateStandings = (leagueId, teams, matches, inaugurationDate) =
             id: team.id,
             name: team.name,
             logoUrl: team.logoUrl,
+            shirtColorName: team.shirtColorName,
+            shirtColorHex: team.shirtColorHex,
             played,
             wins,
             draws,
@@ -302,8 +304,8 @@ export const printInaugurationMatches = (visMatches, visLeagues, inaugDate, getT
     printWindow.document.close();
 };
 
-// --- CÉDULAS DE ARBITRAJE CON NÓMINA DE ALUMNOS, TARJETAS Y GOLES ---
-export const printRefereeSheetWindow = (visMatches, visPlayers, visLeagues, targetDate, getLeagueName, getTeamName, getTeamLogo, getPlayersByTeam, showMessage, autoPrint = false) => {
+// --- CÉDULAS DE ARBITRAJE CON NÓMINA DE ALUMNOS, TARJETAS, GOLES Y COLORES DE PLAYERA GILDAN ---
+export const printRefereeSheetWindow = (visMatches, visPlayers, visLeagues, targetDate, getLeagueName, getTeamName, getTeamLogo, getPlayersByTeam, showMessage, autoPrint = false, visTeams = []) => {
     const matchesToPrint = targetDate ? visMatches.filter(m => m.date === targetDate) : visMatches;
     if (matchesToPrint.length === 0) {
         if (showMessage) showMessage("No hay partidos programados para la fecha seleccionada.");
@@ -355,7 +357,6 @@ export const printRefereeSheetWindow = (visMatches, visPlayers, visLeagues, targ
             </div>
     `;
 
-    // Lista de alumnos por defecto en caso de que el equipo aún no tenga registrados en Firestore
     const defaultStudentNames = [
         'Gabriel Santos',
         'Mateo Hernández',
@@ -372,6 +373,11 @@ export const printRefereeSheetWindow = (visMatches, visPlayers, visLeagues, targ
         const awayLogo = getTeamLogo(m.awayTeamId);
         const leagueName = getLeagueName(m.leagueId);
         
+        const homeTeamObj = visTeams ? visTeams.find(t => t.id === m.homeTeamId) : null;
+        const awayTeamObj = visTeams ? visTeams.find(t => t.id === m.awayTeamId) : null;
+        const homeShirtColor = getTeamShirtColor(homeTeamObj, visTeams);
+        const awayShirtColor = getTeamShirtColor(awayTeamObj, visTeams);
+
         let homePlayers = getPlayersByTeam ? getPlayersByTeam(m.homeTeamId) : [];
         if (homePlayers.length === 0 && visPlayers) {
             homePlayers = visPlayers.filter(p => p.teamId === m.homeTeamId);
@@ -382,7 +388,7 @@ export const printRefereeSheetWindow = (visMatches, visPlayers, visLeagues, targ
             awayPlayers = visPlayers.filter(p => p.teamId === m.awayTeamId);
         }
 
-        const renderPlayerTable = (pList, teamTitle) => {
+        const renderPlayerTable = (pList, teamTitle, shirtColor) => {
             const displayList = pList.length > 0 
                 ? pList 
                 : defaultStudentNames.map((n, i) => ({ name: n, number: [7, 10, 9, 11, 4, 8][i] }));
@@ -407,8 +413,11 @@ export const printRefereeSheetWindow = (visMatches, visPlayers, visLeagues, targ
             }
             return `
                 <div>
-                    <div class="table-header">
-                        <span>${teamTitle}</span>
+                    <div class="table-header" style="justify-content: space-between; align-items: center;">
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <span>${teamTitle}</span>
+                            <span style="background-color: ${shirtColor.hex}; color: ${shirtColor.isLight ? '#000' : '#fff'}; border: 1px solid ${shirtColor.border}; padding: 1px 6px; border-radius: 6px; font-size: 9px; font-weight: 800;">👕 ${shirtColor.name}</span>
+                        </div>
                         <span>Nº | G | TA | TR</span>
                     </div>
                     <div class="players-list">
@@ -441,8 +450,8 @@ export const printRefereeSheetWindow = (visMatches, visPlayers, visLeagues, targ
                     </div>
                 </div>
                 <div class="players-grid">
-                    ${renderPlayerTable(homePlayers, 'Jugadores Local')}
-                    ${renderPlayerTable(awayPlayers, 'Jugadores Visitante')}
+                    ${renderPlayerTable(homePlayers, 'Jugadores Local', homeShirtColor)}
+                    ${renderPlayerTable(awayPlayers, 'Jugadores Visitante', awayShirtColor)}
                 </div>
                 <div class="footer-row">
                     <div class="score-box"><span>Marcador Final:</span><div class="score-input"></div></div>
@@ -467,8 +476,8 @@ export const printRefereeSheetWindow = (visMatches, visPlayers, visLeagues, targ
     printWindow.document.close();
 };
 
-export const generateRefereeSheetPdf = (visMatches, visPlayers, visLeagues, targetDate, getLeagueName, getTeamName, getTeamLogo, getPlayersByTeam, showMessage) => {
-    printRefereeSheetWindow(visMatches, visPlayers, visLeagues, targetDate, getLeagueName, getTeamName, getTeamLogo, getPlayersByTeam, showMessage, true);
+export const generateRefereeSheetPdf = (visMatches, visPlayers, visLeagues, targetDate, getLeagueName, getTeamName, getTeamLogo, getPlayersByTeam, showMessage, visTeams = []) => {
+    printRefereeSheetWindow(visMatches, visPlayers, visLeagues, targetDate, getLeagueName, getTeamName, getTeamLogo, getPlayersByTeam, showMessage, true, visTeams);
 };
 
 // --- REPORTE DE CLASIFICACIÓN Y GOLEO CON ESCUDOS Y PODIO ---
@@ -633,7 +642,7 @@ export const generateStandingsAndTopScorersPdf = (visLeagues, visTeams, visMatch
     printStandingsAndTopScorersWindow(visLeagues, visTeams, visMatches, visPlayers, tournamentId, showMessage, true);
 };
 
-// --- ROSTER DE JUGADORES Y EQUIPOS CON ESCUDOS ---
+// --- ROSTER DE JUGADORES Y EQUIPOS CON ESCUDOS Y PLAYERA GILDAN ---
 export const printTeamsAndPlayersRosterWindow = (visLeagues, visTeams, visPlayers, showMessage, autoPrint = false) => {
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
@@ -654,7 +663,7 @@ export const printTeamsAndPlayersRosterWindow = (visLeagues, visTeams, visPlayer
                 h2 { color: #d97706; margin: 0; font-size: 16px; font-weight: 700; }
                 .league-title { font-size: 18px; font-weight: 800; color: #101097; margin-top: 25px; border-bottom: 2px solid #e2e8f0; padding-bottom: 6px; }
                 .team-card { border: 1px solid #cbd5e1; border-radius: 12px; padding: 15px; margin-top: 15px; page-break-inside: avoid; }
-                .team-header { display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 800; color: #0f172a; margin-bottom: 10px; }
+                .team-header { display: flex; align-items: center; justify-content: space-between; font-size: 16px; font-weight: 800; color: #0f172a; margin-bottom: 10px; }
                 .team-logo { width: 32px; height: 32px; object-fit: contain; border-radius: 50%; border: 1px solid #cbd5e1; padding: 1px; }
                 .player-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; font-size: 13px; font-weight: 600; }
                 .player-item { background: #f8fafc; padding: 6px 10px; border-radius: 6px; border: 1px solid #e2e8f0; }
@@ -678,12 +687,19 @@ export const printTeamsAndPlayersRosterWindow = (visLeagues, visTeams, visPlayer
 
         htmlContent += `<div class="league-title">🏆 ${league.name}</div>`;
         lTeams.forEach(team => {
+            const shirtColor = getTeamShirtColor(team, visTeams);
             const teamPlayers = visPlayers.filter(p => p.teamId === team.id);
             htmlContent += `
                 <div class="team-card">
                     <div class="team-header">
-                        <img src="${team.logoUrl || 'https://crests.football-data.org/86.png'}" class="team-logo" alt="" />
-                        <span>${team.name} (${teamPlayers.length} alumnos)</span>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <img src="${team.logoUrl || 'https://crests.football-data.org/86.png'}" class="team-logo" alt="" />
+                            <span>${team.name} (${teamPlayers.length} alumnos)</span>
+                        </div>
+                        <div style="display: inline-flex; align-items: center; gap: 6px; background-color: ${shirtColor.hex}; color: ${shirtColor.isLight ? '#000000' : '#ffffff'}; border: 1.5px solid ${shirtColor.border}; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 800;">
+                            <span>👕</span>
+                            <span>Playera: ${shirtColor.name}</span>
+                        </div>
                     </div>
                     <div class="player-grid">
                         ${teamPlayers.length > 0 ? teamPlayers.map((p, i) => `<div class="player-item">${i + 1}. ${p.name}</div>`).join('') : '<div style="color:#94a3b8; font-style:italic;">Sin alumnos registrados</div>'}

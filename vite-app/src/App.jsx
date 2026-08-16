@@ -2,11 +2,12 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { collection, onSnapshot, doc, setDoc, addDoc, deleteDoc } from 'firebase/firestore';
 import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
 import { db, auth, APP_ID } from './config/firebase';
-import { sendTelegramNotification, CHAMPIONS_LEAGUE_CLUBS, sortLeagues, getSportScoringInfo, dayOptions } from './config/constants';
+import { sendTelegramNotification, CHAMPIONS_LEAGUE_CLUBS, sortLeagues, getSportScoringInfo, dayOptions, getUniqueDefaultShirtColor } from './config/constants';
 import { PlusIcon, CalendarIcon, TrophyIcon, EditIcon, TrashIcon, ChevronDownIcon, ChevronUpIcon, LockIcon, CloseIcon, FlagIcon, SportIcon } from './components/Icons';
 import { Modal } from './components/Modal';
 import { ClubSelectorModal } from './components/ClubSelectorModal';
 import { TeamProfileModal } from './components/TeamProfileModal';
+import { EditTeamModal } from './components/EditTeamModal';
 import { SportsHeroBanner } from './components/SportsHeroBanner';
 import { StandingsTable } from './components/StandingsTable';
 import { ResultsList } from './components/ResultsList';
@@ -354,7 +355,9 @@ export default function App() {
                                 id: newTeamId,
                                 name: prevTeam.name,
                                 leagueId: newLeagueId,
-                                logoUrl: prevTeam.logoUrl || 'https://crests.football-data.org/86.png'
+                                logoUrl: prevTeam.logoUrl || 'https://crests.football-data.org/86.png',
+                                shirtColorName: prevTeam.shirtColorName || '',
+                                shirtColorHex: prevTeam.shirtColorHex || ''
                             });
 
                             const prevPlayers = players.filter(p => p.teamId === prevTeam.id);
@@ -399,7 +402,9 @@ export default function App() {
                             id: newTeamId,
                             name: club.name,
                             leagueId: newLeagueId,
-                            logoUrl: club.logoUrl
+                            logoUrl: club.logoUrl,
+                            shirtColorName: club.shirtColorName || 'Royal',
+                            shirtColorHex: club.shirtColorHex || '#1565C0'
                         });
 
                         for (const s of sampleStudents) {
@@ -920,12 +925,16 @@ export default function App() {
                                     onAddNewTeam={async (lId) => {
                                         const name = prompt("Nombre del nuevo equipo:");
                                         if (name) {
+                                            const existingLeagueTeams = visibleTeams.filter(t => t.leagueId === lId);
+                                            const assignedColor = getUniqueDefaultShirtColor(existingLeagueTeams);
                                             await addDoc(collection(db, `artifacts/${APP_ID}/public/data/teams`), {
                                                 name,
                                                 leagueId: lId,
-                                                logoUrl: 'https://crests.football-data.org/86.png'
+                                                logoUrl: 'https://crests.football-data.org/86.png',
+                                                shirtColorName: assignedColor.name,
+                                                shirtColorHex: assignedColor.hex
                                             });
-                                            showMessage("Equipo añadido.");
+                                            showMessage(`Equipo "${name}" (Playera ${assignedColor.name}) añadido.`);
                                         }
                                     }}
                                     onOpenCountrySelector={(t) => { setSelectedTeamForClub(t); setShowClubModal(true); }}
@@ -1309,9 +1318,32 @@ export default function App() {
                     if (selectedTeamForClub) {
                         await setDoc(doc(db, `artifacts/${APP_ID}/public/data/teams`, selectedTeamForClub.id), {
                             logoUrl: club.logoUrl,
-                            clubId: club.id
+                            clubId: club.id,
+                            shirtColorName: club.shirtColorName || 'Royal',
+                            shirtColorHex: club.shirtColorHex || '#1565C0'
                         }, { merge: true });
-                        showMessage(`Club ${club.name} asignado a ${selectedTeamForClub.name}.`);
+                        showMessage(`Club ${club.name} (Playera ${club.shirtColorName || ''}) asignado a ${selectedTeamForClub.name}.`);
+                    }
+                }}
+            />
+
+            <EditTeamModal
+                show={showEditTeamModal}
+                team={selectedTeamForEdit}
+                allTeams={teams}
+                onClose={() => setShowEditTeamModal(false)}
+                onSave={async (teamId, name, logoUrl, shirtColorName, shirtColorHex) => {
+                    try {
+                        await setDoc(doc(db, `artifacts/${APP_ID}/public/data/teams`, teamId), {
+                            name,
+                            logoUrl,
+                            shirtColorName,
+                            shirtColorHex
+                        }, { merge: true });
+                        showMessage(`Equipo "${name}" y playera (${shirtColorName}) actualizados.`);
+                    } catch (err) {
+                        console.error("Error al actualizar equipo:", err);
+                        showMessage("Error al guardar cambios.");
                     }
                 }}
             />

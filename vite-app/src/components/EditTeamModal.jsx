@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { GILDAN_COLOR_PALETTE, getTeamShirtColor } from '../config/constants';
+import { EURO_COTTON_COLOR_PALETTE, getTeamShirtColor } from '../config/constants';
 import { CloseIcon } from './Icons';
 
 export const EditTeamModal = ({ show, team, allTeams, onClose, onSave }) => {
     const [teamName, setTeamName] = useState('');
     const [logoUrl, setLogoUrl] = useState('');
-    const [shirtColorName, setShirtColorName] = useState('Royal');
+    const [shirtColorName, setShirtColorName] = useState('Rey');
 
     useEffect(() => {
         if (team) {
@@ -18,7 +18,7 @@ export const EditTeamModal = ({ show, team, allTeams, onClose, onSave }) => {
 
     if (!show || !team) return null;
 
-    const selectedColorObj = GILDAN_COLOR_PALETTE.find(c => c.name === shirtColorName) || GILDAN_COLOR_PALETTE[0];
+    const selectedColorObj = EURO_COTTON_COLOR_PALETTE.find(c => c.name === shirtColorName) || EURO_COTTON_COLOR_PALETTE[0];
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -69,7 +69,7 @@ export const EditTeamModal = ({ show, team, allTeams, onClose, onSave }) => {
 
                     <div className="space-y-2 p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-800">
                         <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 font-outfit">
-                            👕 Color de Playera (Catálogo Gildan)
+                            👕 Color de Playera (Catálogo Euro Cotton)
                         </label>
                         <div className="flex items-center space-x-3">
                             <span
@@ -88,7 +88,7 @@ export const EditTeamModal = ({ show, team, allTeams, onClose, onSave }) => {
                                 onChange={(e) => setShirtColorName(e.target.value)}
                                 className="input-modern font-bold text-sm py-2"
                             >
-                                {GILDAN_COLOR_PALETTE.map(color => (
+                                {EURO_COTTON_COLOR_PALETTE.map(color => (
                                     <option key={color.name} value={color.name}>
                                         {color.name}
                                     </option>

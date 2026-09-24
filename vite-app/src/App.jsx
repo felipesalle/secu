@@ -26,6 +26,8 @@ import {
     generateStandingsAndTopScorersPdf,
     generateTeamsAndPlayersRosterPdf,
     printTeamsAndPlayersRosterWindow,
+    generateGroupShirtColorRosterPdf,
+    printGroupShirtColorRosterWindow,
     printInaugurationMatches
 } from './utils/pdfGenerator';
 import { copyFacebookSummaryText, printFacebookSummaryWindow } from './utils/facebookPoster';
@@ -1212,6 +1214,32 @@ export default function App() {
                                         className="btn-primary flex-1 min-w-[220px] flex items-center justify-center text-sm bg-gradient-to-r from-indigo-700 to-blue-800"
                                     >
                                         🖨️ Imprimir / Vista Previa Roster (HTML)
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Card 5: Reporte de Alumnos y Colores de Playera Euro Cotton por Grupo */}
+                        <div className="card p-6 space-y-4 border-t-4 border-sky-600 shadow-md lg:col-span-2">
+                            <h3 className="text-xl font-bold font-outfit text-slate-800 dark:text-white flex items-center border-b border-slate-100 dark:border-slate-700 pb-3">
+                                👕 Reporte de Alumnos, Equipos y Colores de Playera Euro Cotton por Grupo
+                            </h3>
+                            <div className="p-5 bg-slate-50 dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+                                <p className="text-xs text-slate-500 dark:text-slate-400">
+                                    Genera un informe detallado agrupado por cada Liga o Grupo (Grupos A Varonil, Grupos A Femenil, etc.), indicando a qué equipo pertenece cada alumno y la muestra exacta del color de playera Euro Cotton que le corresponde.
+                                </p>
+                                <div className="flex flex-wrap gap-4">
+                                    <button 
+                                        onClick={() => generateGroupShirtColorRosterPdf(visibleLeagues, visibleTeams, visiblePlayers, showMessage)} 
+                                        className="btn-primary flex-1 min-w-[220px] flex items-center justify-center text-sm bg-gradient-to-r from-sky-600 to-blue-700"
+                                    >
+                                        📄 Descargar PDF por Grupos
+                                    </button>
+                                    <button 
+                                        onClick={() => printGroupShirtColorRosterWindow(visibleLeagues, visibleTeams, visiblePlayers, showMessage)} 
+                                        className="btn-primary flex-1 min-w-[220px] flex items-center justify-center text-sm bg-gradient-to-r from-blue-700 to-indigo-800"
+                                    >
+                                        🖨️ Vista Previa e Imprimir por Grupos
                                     </button>
                                 </div>
                             </div>

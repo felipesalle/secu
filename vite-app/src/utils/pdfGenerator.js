@@ -304,7 +304,7 @@ export const printInaugurationMatches = (visMatches, visLeagues, inaugDate, getT
     printWindow.document.close();
 };
 
-// --- CÉDULAS DE ARBITRAJE CON NÓMINA DE ALUMNOS, TARJETAS, GOLES Y COLORES DE PLAYERA GILDAN ---
+// --- CÉDULAS DE ARBITRAJE CON NÓMINA DE ALUMNOS, TARJETAS, GOLES Y COLORES DE PLAYERA EURO COTTON ---
 export const printRefereeSheetWindow = (visMatches, visPlayers, visLeagues, targetDate, getLeagueName, getTeamName, getTeamLogo, getPlayersByTeam, showMessage, autoPrint = false, visTeams = []) => {
     const matchesToPrint = targetDate ? visMatches.filter(m => m.date === targetDate) : visMatches;
     if (matchesToPrint.length === 0) {
@@ -642,7 +642,7 @@ export const generateStandingsAndTopScorersPdf = (visLeagues, visTeams, visMatch
     printStandingsAndTopScorersWindow(visLeagues, visTeams, visMatches, visPlayers, tournamentId, showMessage, true);
 };
 
-// --- ROSTER DE JUGADORES Y EQUIPOS CON ESCUDOS Y PLAYERA GILDAN ---
+// --- ROSTER DE JUGADORES Y EQUIPOS CON ESCUDOS Y PLAYERA EURO COTTON ---
 export const printTeamsAndPlayersRosterWindow = (visLeagues, visTeams, visPlayers, showMessage, autoPrint = false) => {
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
@@ -698,7 +698,7 @@ export const printTeamsAndPlayersRosterWindow = (visLeagues, visTeams, visPlayer
                         </div>
                         <div style="display: inline-flex; align-items: center; gap: 6px; background-color: ${shirtColor.hex}; color: ${shirtColor.isLight ? '#000000' : '#ffffff'}; border: 1.5px solid ${shirtColor.border}; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 800;">
                             <span>👕</span>
-                            <span>Playera: ${shirtColor.name}</span>
+                            <span>Playera Euro Cotton: ${shirtColor.name}</span>
                         </div>
                     </div>
                     <div class="player-grid">
@@ -721,4 +721,125 @@ export const printTeamsAndPlayersRosterWindow = (visLeagues, visTeams, visPlayer
 
 export const generateTeamsAndPlayersRosterPdf = (visLeagues, visTeams, visPlayers, tournamentId, showMessage) => {
     printTeamsAndPlayersRosterWindow(visLeagues, visTeams, visPlayers, showMessage, true);
+};
+
+// --- REPORTE DE ALUMNOS, EQUIPOS Y COLORES DE PLAYERA EURO COTTON POR GRUPO / LIGA ---
+export const printGroupShirtColorRosterWindow = (visLeagues, visTeams, visPlayers, showMessage, autoPrint = false) => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+        if (showMessage) showMessage("Por favor permite las ventanas emergentes para imprimir.");
+        return;
+    }
+
+    let htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Reporte de Alumnos y Colores de Playera por Grupo</title>
+            <style>
+                body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 25px; color: #0f172a; background: #fff; }
+                .header { text-align: center; border-bottom: 3px solid #101097; padding-bottom: 15px; margin-bottom: 25px; }
+                .logo-school { width: 52px; height: 52px; object-fit: contain; margin-bottom: 8px; }
+                h1 { color: #101097; margin: 0 0 5px 0; font-size: 24px; font-weight: 800; }
+                h2 { color: #d97706; margin: 0; font-size: 16px; font-weight: 700; }
+                .league-block { margin-top: 25px; page-break-inside: avoid; border: 2px solid #cbd5e1; border-radius: 16px; padding: 18px; background: #fafafa; }
+                .league-header { font-size: 18px; font-weight: 800; color: #101097; border-bottom: 2px solid #101097; padding-bottom: 8px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
+                .team-card { background: #fff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 14px; margin-bottom: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+                .team-title-bar { display: flex; align-items: center; justify-content: space-between; font-size: 16px; font-weight: 800; color: #0f172a; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; margin-bottom: 10px; }
+                .team-info { display: flex; align-items: center; gap: 10px; }
+                .team-logo { width: 32px; height: 32px; object-fit: contain; border-radius: 50%; border: 1px solid #cbd5e1; padding: 1px; }
+                .shirt-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 800; border: 1.5px solid; }
+                .player-table { width: 100%; border-collapse: collapse; margin-top: 6px; }
+                .player-table th { background: #101097; color: #ffffff; text-align: left; padding: 6px 10px; font-size: 12px; font-weight: 700; }
+                .player-table td { padding: 6px 10px; border-bottom: 1px solid #f1f5f9; font-size: 13px; font-weight: 600; }
+                .player-table tr:nth-child(even) { background: #f8fafc; }
+                @media print { .no-print { display: none !important; } }
+            </style>
+        </head>
+        <body>
+            <div class="no-print" style="margin-bottom: 20px; text-align: right;">
+                <button onclick="window.print()" style="padding: 10px 24px; background: #101097; color: white; border: none; border-radius: 10px; font-weight: 800; font-size: 14px; cursor: pointer;">🖨️ Guardar como PDF / Imprimir Reporte por Grupos</button>
+            </div>
+            <div class="header">
+                <img src="https://i.imgur.com/pbiHVPL.png" class="logo-school" alt="La Salle Logo" />
+                <h1>LIGAS LA SALLE TUXTLA — SECUNDARIA</h1>
+                <h2>👕 ASIGNACIÓN DE ALUMNOS, EQUIPOS Y COLORES DE PLAYERA EURO COTTON POR GRUPO</h2>
+            </div>
+    `;
+
+    visLeagues.forEach(league => {
+        const lTeams = visTeams.filter(t => t.leagueId === league.id);
+        if (lTeams.length === 0) return;
+
+        htmlContent += `
+            <div class="league-block">
+                <div class="league-header">
+                    <span>🏆 GRUPO / LIGA: ${league.name}</span>
+                    <span style="font-size: 13px; font-weight: 700; color: #64748b;">${lTeams.length} Equipos</span>
+                </div>
+        `;
+
+        lTeams.forEach(team => {
+            const shirtColor = getTeamShirtColor(team, visTeams);
+            const teamPlayers = visPlayers.filter(p => p.teamId === team.id);
+
+            htmlContent += `
+                <div class="team-card">
+                    <div class="team-title-bar">
+                        <div class="team-info">
+                            <img src="${team.logoUrl || 'https://crests.football-data.org/86.png'}" class="team-logo" alt="" />
+                            <span>${team.name}</span>
+                        </div>
+                        <div class="shirt-badge" style="background-color: ${shirtColor.hex}; color: ${shirtColor.isLight ? '#000000' : '#ffffff'}; border-color: ${shirtColor.border};">
+                            <span>👕</span>
+                            <span>Playera Euro Cotton: ${shirtColor.name}</span>
+                        </div>
+                    </div>
+                    <table class="player-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 40px;">#</th>
+                                <th>Nombre del Alumno</th>
+                                <th>Equipo Asignado</th>
+                                <th style="text-align: right;">Color de Uniforme Euro Cotton</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${teamPlayers.length > 0 ? teamPlayers.map((p, i) => `
+                                <tr>
+                                    <td><strong>${i + 1}</strong></td>
+                                    <td>${p.name}</td>
+                                    <td><strong>${team.name}</strong></td>
+                                    <td style="text-align: right;">
+                                        <span style="font-weight: 800; color: ${shirtColor.hex === '#FFFFFF' ? '#000' : shirtColor.hex};">👕 ${shirtColor.name}</span>
+                                    </td>
+                                </tr>
+                            `).join('') : `
+                                <tr>
+                                    <td colspan="4" style="color: #94a3b8; font-style: italic; text-align: center; padding: 10px;">
+                                        Sin alumnos registrados en este equipo.
+                                    </td>
+                                </tr>
+                            `}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        });
+
+        htmlContent += `</div>`;
+    });
+
+    htmlContent += `
+            ${autoPrint ? `<script>window.onload = function() { setTimeout(function() { window.print(); }, 400); };</script>` : ''}
+        </body>
+        </html>
+    `;
+
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+};
+
+export const generateGroupShirtColorRosterPdf = (visLeagues, visTeams, visPlayers, showMessage) => {
+    printGroupShirtColorRosterWindow(visLeagues, visTeams, visPlayers, showMessage, true);
 };

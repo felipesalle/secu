@@ -66,7 +66,7 @@ export const LeagueCard = ({ league, teams, players, showMessage, onMatchDayChan
                                                 color: shirtColor.isLight ? '#000000' : '#ffffff',
                                                 borderColor: shirtColor.border
                                             }}
-                                            title={`Color de Playera: ${shirtColor.name} (Catálogo Gildan)`}
+                                            title={`Color de Playera: ${shirtColor.name} (Catálogo Euro Cotton)`}
                                             onClick={() => onEditTeam(team)}
                                         >
                                             <span>👕</span>

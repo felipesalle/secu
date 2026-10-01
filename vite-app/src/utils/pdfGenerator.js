@@ -702,7 +702,7 @@ export const printTeamsAndPlayersRosterWindow = (visLeagues, visTeams, visPlayer
                         </div>
                     </div>
                     <div class="player-grid">
-                        ${teamPlayers.length > 0 ? teamPlayers.map((p, i) => `<div class="player-item">${i + 1}. ${p.name}</div>`).join('') : '<div style="color:#94a3b8; font-style:italic;">Sin alumnos registrados</div>'}
+                        ${teamPlayers.length > 0 ? teamPlayers.map((p, i) => `<div class="player-item">${i + 1}. ${p.name}${p.gradeGroup ? ` <span style="font-size:11px; background:#e2e8f0; color:#1e293b; padding:1px 6px; border-radius:4px; font-weight:700;">(${p.gradeGroup})</span>` : ''}</div>`).join('') : '<div style="color:#94a3b8; font-style:italic;">Sin alumnos registrados</div>'}
                     </div>
                 </div>
             `;
@@ -808,7 +808,7 @@ export const printGroupShirtColorRosterWindow = (visLeagues, visTeams, visPlayer
                             ${teamPlayers.length > 0 ? teamPlayers.map((p, i) => `
                                 <tr>
                                     <td><strong>${i + 1}</strong></td>
-                                    <td>${p.name}</td>
+                                    <td>${p.name}${p.gradeGroup ? ` <span style="font-size:11px; background:#e2e8f0; color:#1e293b; padding:1px 6px; border-radius:4px; font-weight:700;">(${p.gradeGroup})</span>` : ''}</td>
                                     <td><strong>${team.name}</strong></td>
                                     <td style="text-align: right;">
                                         <span style="font-weight: 800; color: ${shirtColor.hex === '#FFFFFF' ? '#000' : shirtColor.hex};">👕 ${shirtColor.name}</span>

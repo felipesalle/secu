@@ -83,7 +83,14 @@ export const LeagueCard = ({ league, teams, players, showMessage, onMatchDayChan
                                     {players.filter(p => p.teamId === team.id).length > 0 ? (
                                         players.filter(p => p.teamId === team.id).map(player => (
                                             <li key={player.id} className="flex items-center justify-between text-sm bg-slate-50 dark:bg-slate-900/50 px-4 py-2 rounded-lg border border-slate-100 dark:border-slate-800">
-                                                <span className="font-medium">{player.name}</span>
+                                                <span className="font-medium flex items-center gap-2">
+                                                    <span>{player.name}</span>
+                                                    {player.gradeGroup && (
+                                                        <span className="text-xs px-2 py-0.5 rounded-md bg-indigo-100 dark:bg-indigo-900/50 text-[#101097] dark:text-blue-300 font-bold">
+                                                            {player.gradeGroup}
+                                                        </span>
+                                                    )}
+                                                </span>
                                                 <button onClick={() => handleDeletePlayer(player.id)} className="text-red-400 hover:text-[#CE0E2D] p-1 rounded-full hover:bg-red-50 transition-colors" aria-label="Eliminar"><TrashIcon className="w-4 h-4" /></button>
                                             </li>
                                         ))

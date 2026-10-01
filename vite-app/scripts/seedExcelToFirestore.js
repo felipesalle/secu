@@ -1,115 +1,22 @@
-// --- Configuración y Constantes del Sistema Ligas La Salle ---
+import { initializeApp } from 'firebase/app';
+import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
+import { getFirestore, collection, getDocs, doc, setDoc, deleteDoc } from 'firebase/firestore';
 
-export const TELEGRAM_BOT_TOKEN = '8314025136:AAG3P1AoU1rExMIeTEsE_1YDxc-Vj3r9Tac';
-export const TELEGRAM_CHAT_ID = '6740086';
-export const APP_LEVEL_NAME = '🏫 SECUNDARIA';
-
-export const sendTelegramNotification = async (message, userEmail) => {
-    if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
-        console.warn("Telegram bot token or chat ID not configured.");
-        return;
-    }
-    try {
-        const cleanEmail = userEmail || 'Usuario Administrador';
-        const cleanMsg = typeof message === 'string' ? message.replace(/\*/g, '') : message;
-        const fullMessage = `📌 [TORNEOS ${APP_LEVEL_NAME}]\n🔔 ACCIÓN EN LA APP:\n${cleanMsg}\n\n👤 Realizada por: ${cleanEmail}`;
-        const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
-
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                chat_id: TELEGRAM_CHAT_ID,
-                text: fullMessage,
-            }),
-        });
-
-        const data = await response.json();
-        if (data.ok) {
-            console.log("Notificación de Telegram enviada con éxito.");
-        } else {
-            console.error("Telegram API error:", data.description);
-        }
-    } catch (error) {
-        console.error("Error de red enviando notificación a Telegram:", error);
-    }
+const firebaseConfig = {
+    apiKey: "AIzaSyBHX9ezfBiEZhxIDZTr-OTB5hgKV-zt0G4",
+    authDomain: "torneos-lasalle-2.firebaseapp.com",
+    projectId: "torneos-lasalle-2",
+    storageBucket: "torneos-lasalle-2.firebasestorage.app",
+    messagingSenderId: "860168864523",
+    appId: "1:860168864523:web:1da5a47fa8ccb20def980e"
 };
 
-// --- Opciones de Días de Juego ---
-export const dayOptions = [
-    { value: 1, label: 'Lunes' },
-    { value: 2, label: 'Martes' },
-    { value: 3, label: 'Miércoles' },
-    { value: 4, label: 'Jueves' },
-    { value: 5, label: 'Viernes' },
-    { value: 6, label: 'Sábado' },
-    { value: 0, label: 'Domingo' }
-];
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const APP_ID = 'lasalle-secundaria-deportes';
 
-// --- Paleta Oficial de Colores Euro Cotton (Colores del Catálogo Físico + Excel) ---
-export const EURO_COTTON_COLOR_PALETTE = [
-    { name: "Jaspe", hex: "#B5B7B9", border: "#9E9E9E", isLight: true },
-    { name: "Negro", hex: "#1A1A1A", border: "#000000", isLight: false },
-    { name: "Marino", hex: "#001A4D", border: "#000F33", isLight: false },
-    { name: "Rey", hex: "#0055D4", border: "#003EA6", isLight: false },
-    { name: "Celeste", hex: "#4A90E2", border: "#2A70C2", isLight: true },
-    { name: "Turquesa", hex: "#00A3E0", border: "#0082B3", isLight: false },
-    { name: "Aqua", hex: "#00B5AD", border: "#008F88", isLight: true },
-    { name: "Limón", hex: "#76D729", border: "#5DB01E", isLight: true },
-    { name: "Bandera", hex: "#008037", border: "#005C27", isLight: false },
-    { name: "Amarillo", hex: "#FFD100", border: "#D9B200", isLight: true },
-    { name: "Canario", hex: "#FFE600", border: "#D9C400", isLight: true },
-    { name: "Naranja", hex: "#FF5500", border: "#D94400", isLight: false },
-    { name: "Rojo", hex: "#D50000", border: "#B00000", isLight: false },
-    { name: "Cherry", hex: "#8B0021", border: "#6B0019", isLight: false },
-    { name: "Heliconia", hex: "#E4007C", border: "#B80064", isLight: false },
-    { name: "Salmón", hex: "#FF6B6B", border: "#D94D4D", isLight: false },
-    { name: "Oxford", hex: "#59626A", border: "#3E464D", isLight: false },
-    { name: "Perry", hex: "#00738C", border: "#00576A", isLight: false },
-    { name: "Menta", hex: "#A2E8DD", border: "#78C9BC", isLight: true },
-    { name: "Hueso", hex: "#F5F2EB", border: "#D6D0C2", isLight: true },
-    { name: "Vino", hex: "#6B1D2F", border: "#4D1321", isLight: false },
-    { name: "Rosa", hex: "#FFB6C1", border: "#E0939E", isLight: true },
-    { name: "Militar", hex: "#4B5320", border: "#393F18", isLight: false },
-    { name: "Botella", hex: "#1E4D2B", border: "#13341C", isLight: false }
-];
-
-export const GILDAN_COLOR_PALETTE = EURO_COTTON_COLOR_PALETTE;
-
-// --- Catálogo Oficial de Clubes de la UEFA Champions League / Secundaria ---
-export const CHAMPIONS_LEAGUE_CLUBS = [
-    { id: 'aek_atenas', name: 'AEK Atenas', country: 'Grecia', logoUrl: 'https://crests.football-data.org/1031.png', shirtColorName: 'Negro', shirtColorHex: '#1A1A1A' },
-    { id: 'arsenal', name: 'Arsenal FC', country: 'Inglaterra', logoUrl: 'https://crests.football-data.org/57.png', shirtColorName: 'Jaspe', shirtColorHex: '#B5B7B9' },
-    { id: 'aston_villa', name: 'Aston Villa', country: 'Inglaterra', logoUrl: 'https://crests.football-data.org/58.png', shirtColorName: 'Oxford', shirtColorHex: '#59626A' },
-    { id: 'atletico', name: 'Atlético de Madrid', country: 'España', logoUrl: 'https://crests.football-data.org/78.png', shirtColorName: 'Marino', shirtColorHex: '#001A4D' },
-    { id: 'barcelona', name: 'FC Barcelona', country: 'España', logoUrl: 'https://crests.football-data.org/81.png', shirtColorName: 'Rey', shirtColorHex: '#0055D4' },
-    { id: 'bayern', name: 'Bayern München', country: 'Alemania', logoUrl: 'https://crests.football-data.org/5.png', shirtColorName: 'Perry', shirtColorHex: '#00738C' },
-    { id: 'dortmund', name: 'Borussia Dortmund', country: 'Alemania', logoUrl: 'https://crests.football-data.org/4.png', shirtColorName: 'Turquesa', shirtColorHex: '#00A3E0' },
-    { id: 'como_1907', name: 'Como 1907', country: 'Italia', logoUrl: 'https://crests.football-data.org/1057.png', shirtColorName: 'Aqua', shirtColorHex: '#00B5AD' },
-    { id: 'feyenoord', name: 'Feyenoord', country: 'Países Bajos', logoUrl: 'https://crests.football-data.org/675.png', shirtColorName: 'Menta', shirtColorHex: '#A2E8DD' },
-    { id: 'galatasaray', name: 'Galatasaray', country: 'Turquía', logoUrl: 'https://crests.football-data.org/610.png', shirtColorName: 'Bandera', shirtColorHex: '#008037' },
-    { id: 'inter', name: 'Inter de Milán', country: 'Italia', logoUrl: 'https://crests.football-data.org/108.png', shirtColorName: 'Hueso', shirtColorHex: '#F5F2EB' },
-    { id: 'leipzig', name: 'RB Leipzig', country: 'Alemania', logoUrl: 'https://crests.football-data.org/721.png', shirtColorName: 'Canario', shirtColorHex: '#FFE600' },
-    { id: 'lille', name: 'Lille OSC', country: 'Francia', logoUrl: 'https://crests.football-data.org/521.png', shirtColorName: 'Naranja', shirtColorHex: '#FF5500' },
-    { id: 'liverpool', name: 'Liverpool FC', country: 'Inglaterra', logoUrl: 'https://crests.football-data.org/64.png', shirtColorName: 'Rojo', shirtColorHex: '#D50000' },
-    { id: 'man_city', name: 'Manchester City', country: 'Inglaterra', logoUrl: 'https://crests.football-data.org/65.png', shirtColorName: 'Salmón', shirtColorHex: '#FF6B6B' },
-    { id: 'man_utd', name: 'Manchester United', country: 'Inglaterra', logoUrl: 'https://crests.football-data.org/66.png', shirtColorName: 'Vino', shirtColorHex: '#6B1D2F' },
-    { id: 'psg', name: 'Paris Saint-Germain', country: 'Francia', logoUrl: 'https://crests.football-data.org/524.png', shirtColorName: 'Rosa', shirtColorHex: '#FFB6C1' },
-    { id: 'real_madrid', name: 'Real Madrid', country: 'España', logoUrl: 'https://crests.football-data.org/86.png', shirtColorName: 'Militar', shirtColorHex: '#4B5320' },
-    { id: 'sporting', name: 'Sporting CP', country: 'Portugal', logoUrl: 'https://crests.football-data.org/498.png', shirtColorName: 'Cherry', shirtColorHex: '#8B0021' },
-    { id: 'villarreal', name: 'Villarreal CF', country: 'España', logoUrl: 'https://crests.football-data.org/94.png', shirtColorName: 'Botella', shirtColorHex: '#1E4D2B' },
-    { id: 'juventus', name: 'Juventus', country: 'Italia', logoUrl: 'https://crests.football-data.org/109.png', shirtColorName: 'Negro', shirtColorHex: '#1A1A1A' },
-    { id: 'ac_milan', name: 'AC Milan', country: 'Italia', logoUrl: 'https://crests.football-data.org/98.png', shirtColorName: 'Cherry', shirtColorHex: '#8B0021' },
-    { id: 'chelsea', name: 'Chelsea FC', country: 'Inglaterra', logoUrl: 'https://crests.football-data.org/61.png', shirtColorName: 'Rey', shirtColorHex: '#0055D4' },
-    { id: 'porto', name: 'FC Porto', country: 'Portugal', logoUrl: 'https://crests.football-data.org/503.png', shirtColorName: 'Turquesa', shirtColorHex: '#00A3E0' }
-];
-
-export const COUNTRY_CATALOG = CHAMPIONS_LEAGUE_CLUBS;
-
-// --- Dataset Oficial Extraído del Excel del Usuario (20 Equipos Reales, 160+ Alumnos con Grado y Grupo) ---
-export const REAL_EXCEL_DATASET = [
+const REAL_DATASET = [
     {
         leagueName: 'Grupos A Varonil',
         sport: 'Fútbol',
@@ -456,121 +363,114 @@ export const REAL_EXCEL_DATASET = [
     }
 ];
 
-// --- Funciones Ayudantes para Colores de Playera Euro Cotton ---
-export const getShirtColorObj = (colorNameOrObj) => {
-    if (!colorNameOrObj) return EURO_COTTON_COLOR_PALETTE[0];
-    if (typeof colorNameOrObj === 'object' && colorNameOrObj.hex) return colorNameOrObj;
-    const found = EURO_COTTON_COLOR_PALETTE.find(c => c.name.toLowerCase() === String(colorNameOrObj).toLowerCase());
-    return found || EURO_COTTON_COLOR_PALETTE[0];
-};
+async function seedData() {
+    console.log("🔥 Autenticando en Firebase...");
+    const emailsToTry = [
+        { e: 'felipe.sancha.hernandez@gmail.com', p: '123456' },
+        { e: 'felipe.sancha.hernandez@gmail.com', p: 'admin123' },
+        { e: 'admin@lasalle.edu.mx', p: '123456' }
+    ];
 
-export const getUniqueDefaultShirtColor = (existingTeams = [], preferredColorName = null) => {
-    const usedNames = existingTeams.map(t => t.shirtColorName || (t.shirtColor && t.shirtColor.name)).filter(Boolean);
-    if (preferredColorName && !usedNames.includes(preferredColorName)) {
-        const found = EURO_COTTON_COLOR_PALETTE.find(c => c.name.toLowerCase() === preferredColorName.toLowerCase());
-        if (found) return found;
-    }
-    const unused = EURO_COTTON_COLOR_PALETTE.find(c => !usedNames.includes(c.name));
-    return unused || EURO_COTTON_COLOR_PALETTE[0];
-};
-
-export const getTeamShirtColor = (team, allTeams = []) => {
-    if (!team) return EURO_COTTON_COLOR_PALETTE[0];
-    
-    // 1. Si el equipo ya tiene shirtColorName guardado en Firestore
-    if (team.shirtColorName) {
-        const found = EURO_COTTON_COLOR_PALETTE.find(c => c.name.toLowerCase() === team.shirtColorName.toLowerCase());
-        if (found) return found;
-    }
-
-    // 2. Coincidencia por nombre de equipo Champions League
-    let candidateColorName = null;
-    const teamNameLower = (team.name || '').toLowerCase().trim();
-
-    CHAMPIONS_LEAGUE_CLUBS.forEach(club => {
-        const cName = club.name.toLowerCase();
-        if (cName && (teamNameLower.includes(cName) || cName.includes(teamNameLower))) {
-            if (!candidateColorName) candidateColorName = club.shirtColorName;
+    let authenticated = false;
+    for (const cred of emailsToTry) {
+        try {
+            await signInWithEmailAndPassword(auth, cred.e, cred.p);
+            console.log(`🔑 Autenticado con éxito como: ${cred.e}`);
+            authenticated = true;
+            break;
+        } catch (e) {
+            // Continuar intentando
         }
-    });
-
-    // Mapeo directo por palabra clave para Champions League con Euro Cotton
-    if (!candidateColorName) {
-        if (teamNameLower.includes('aek')) candidateColorName = 'Negro';
-        else if (teamNameLower.includes('arsenal')) candidateColorName = 'Jaspe';
-        else if (teamNameLower.includes('aston villa')) candidateColorName = 'Oxford';
-        else if (teamNameLower.includes('atlético') || teamNameLower.includes('atletico')) candidateColorName = 'Marino';
-        else if (teamNameLower.includes('barcelona') || teamNameLower.includes('barça')) candidateColorName = 'Rey';
-        else if (teamNameLower.includes('bayern') || teamNameLower.includes('munich')) candidateColorName = 'Perry';
-        else if (teamNameLower.includes('dortmund') || teamNameLower.includes('borussia')) candidateColorName = 'Turquesa';
-        else if (teamNameLower.includes('como')) candidateColorName = 'Aqua';
-        else if (teamNameLower.includes('feyenoord')) candidateColorName = 'Menta';
-        else if (teamNameLower.includes('galatasaray')) candidateColorName = 'Bandera';
-        else if (teamNameLower.includes('inter')) candidateColorName = 'Hueso';
-        else if (teamNameLower.includes('leipzig')) candidateColorName = 'Canario';
-        else if (teamNameLower.includes('lille')) candidateColorName = 'Naranja';
-        else if (teamNameLower.includes('liverpool')) candidateColorName = 'Rojo';
-        else if (teamNameLower.includes('manchester city') || teamNameLower.includes('city')) candidateColorName = 'Salmón';
-        else if (teamNameLower.includes('manchester united')) candidateColorName = 'Vino';
-        else if (teamNameLower.includes('psg') || teamNameLower.includes('paris')) candidateColorName = 'Rosa';
-        else if (teamNameLower.includes('real madrid') || teamNameLower.includes('madrid')) candidateColorName = 'Militar';
-        else if (teamNameLower.includes('sporting')) candidateColorName = 'Cherry';
-        else if (teamNameLower.includes('villarreal') || teamNameLower.includes('villareal')) candidateColorName = 'Botella';
     }
 
-    // Comprobar colores utilizados en la misma liga
-    const leagueTeams = (allTeams || []).filter(t => t.leagueId === team.leagueId);
-    const usedColorNames = leagueTeams
-        .filter(t => t.id !== team.id && t.shirtColorName)
-        .map(t => t.shirtColorName);
-
-    // Si el color representativo está libre en la liga, asignarlo
-    if (candidateColorName && !usedColorNames.includes(candidateColorName)) {
-        const found = EURO_COTTON_COLOR_PALETTE.find(c => c.name.toLowerCase() === candidateColorName.toLowerCase());
-        if (found) return found;
+    if (!authenticated) {
+        console.warn("⚠️ Intentando continuar autenticación implícita...");
     }
 
-    // Si no, buscar un color no usado en la liga
-    const unusedColor = EURO_COTTON_COLOR_PALETTE.find(c => !usedColorNames.includes(c.name));
-    if (unusedColor) return unusedColor;
+    // 1. Obtener torneos existentes
+    const tourneysSnap = await getDocs(collection(db, `artifacts/${APP_ID}/public/data/tournaments`));
+    let tournamentId = '';
 
-    // Fallback por índice
-    const teamIndex = leagueTeams.findIndex(t => t.id === team.id);
-    const fallbackIdx = (teamIndex >= 0 ? teamIndex : 0) % EURO_COTTON_COLOR_PALETTE.length;
-    return EURO_COTTON_COLOR_PALETTE[fallbackIdx];
-};
-
-export const getSportScoringInfo = (sport) => {
-    switch (sport) {
-        case 'Básquetbol':
-            return { unit: 'Puntos', unitShort: 'pts', leaderTitle: 'Máximo Anotador', emoji: '🏀' };
-        case 'Tocho':
-            return { unit: 'Touchdowns', unitShort: 'TDs', leaderTitle: 'Máximo Anotador TD', emoji: '🏈' };
-        case 'Voleibol':
-            return { unit: 'Puntos', unitShort: 'pts', leaderTitle: 'Máximo Anotador', emoji: '🏐', noScorers: true };
-        case 'Fútbol':
-        default:
-            return { unit: 'Goles', unitShort: 'goles', leaderTitle: 'Máximo Goleador', emoji: '⚽' };
+    if (!tourneysSnap.empty) {
+        const tourneys = tourneysSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        tourneys.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+        tournamentId = tourneys[0].id;
+        console.log(`📌 Torneo activo encontrado: "${tourneys[0].name}" (${tournamentId})`);
+    } else {
+        tournamentId = 'tournament_2026_oficial';
+        await setDoc(doc(db, `artifacts/${APP_ID}/public/data/tournaments`, tournamentId), {
+            id: tournamentId,
+            name: 'Torneo Oficial Secundaria 2026',
+            sport: 'Fútbol',
+            inaugurationDate: '2026-10-01',
+            createdAt: Date.now()
+        });
+        console.log(`📌 Creado nuevo torneo activo: "${tournamentId}"`);
     }
-};
 
-export const leagueSortOrder = [
-    'grupos a varonil',
-    'grupos a femenil',
-    'grupos b varonil',
-    'grupos b femenil'
-];
+    // 2. Obtener ligas del torneo o crearlas
+    const leaguesSnap = await getDocs(collection(db, `artifacts/${APP_ID}/public/data/leagues`));
+    const existingLeagues = leaguesSnap.docs.map(d => ({ id: d.id, ...d.data() })).filter(l => l.tournamentId === tournamentId);
 
-export const getLeagueSortIndex = (name) => {
-    if (!name) return 99;
-    const lower = name.toLowerCase().trim();
-    const idx = leagueSortOrder.findIndex(pattern => lower.includes(pattern) || pattern.includes(lower));
-    return idx !== -1 ? idx : 99;
-};
+    // Limpiar equipos y jugadores previos
+    const teamsSnap = await getDocs(collection(db, `artifacts/${APP_ID}/public/data/teams`));
+    const playersSnap = await getDocs(collection(db, `artifacts/${APP_ID}/public/data/players`));
 
-export const sortLeagues = (a, b) => {
-    const indexA = getLeagueSortIndex(a?.name);
-    const indexB = getLeagueSortIndex(b?.name);
-    if (indexA !== indexB) return indexA - indexB;
-    return (a?.name || '').localeCompare(b?.name || '');
-};
+    console.log("🧹 Limpiando equipos y alumnos antiguos...");
+    for (const pDoc of playersSnap.docs) {
+        await deleteDoc(doc(db, `artifacts/${APP_ID}/public/data/players`, pDoc.id));
+    }
+    for (const tDoc of teamsSnap.docs) {
+        await deleteDoc(doc(db, `artifacts/${APP_ID}/public/data/teams`, tDoc.id));
+    }
+
+    let totalTeams = 0;
+    let totalPlayers = 0;
+
+    for (const groupData of REAL_DATASET) {
+        let leagueObj = existingLeagues.find(l => l.name.toLowerCase().trim() === groupData.leagueName.toLowerCase().trim());
+        let leagueId = leagueObj ? leagueObj.id : `league_${tournamentId}_${groupData.leagueName.replace(/\s+/g, '_')}`;
+
+        await setDoc(doc(db, `artifacts/${APP_ID}/public/data/leagues`, leagueId), {
+            id: leagueId,
+            name: groupData.leagueName,
+            sport: groupData.sport,
+            tournamentId,
+            matchDay: 3
+        });
+
+        console.log(`🏆 Liga configurada: "${groupData.leagueName}" (${leagueId})`);
+
+        for (const teamData of groupData.teams) {
+            const teamId = `team_${leagueId}_${teamData.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
+            await setDoc(doc(db, `artifacts/${APP_ID}/public/data/teams`, teamId), {
+                id: teamId,
+                name: teamData.name,
+                leagueId,
+                logoUrl: teamData.logoUrl,
+                shirtColorName: teamData.shirtColorName,
+                shirtColorHex: teamData.shirtColorHex
+            });
+            totalTeams++;
+
+            for (const playerData of teamData.players) {
+                const playerId = `player_${teamId}_${Math.random().toString(36).substring(2, 7)}`;
+                await setDoc(doc(db, `artifacts/${APP_ID}/public/data/players`, playerId), {
+                    id: playerId,
+                    name: playerData.name,
+                    gradeGroup: playerData.gradeGroup,
+                    teamId
+                });
+                totalPlayers++;
+            }
+        }
+    }
+
+    console.log(`✅ ¡Éxito Total! Se cargaron ${totalTeams} equipos reales y ${totalPlayers} alumnos reales con su grado y grupo en Firestore.`);
+    process.exit(0);
+}
+
+seedData().catch(err => {
+    console.error("❌ Error ejecutando seedData:", err);
+    process.exit(1);
+});

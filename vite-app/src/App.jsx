@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { collection, onSnapshot, doc, setDoc, addDoc, deleteDoc } from 'firebase/firestore';
 import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
 import { db, auth, APP_ID } from './config/firebase';
-import { sendTelegramNotification, CHAMPIONS_LEAGUE_CLUBS, sortLeagues, getSportScoringInfo, dayOptions, getUniqueDefaultShirtColor } from './config/constants';
+import { sendTelegramNotification, CHAMPIONS_LEAGUE_CLUBS, sortLeagues, getSportScoringInfo, dayOptions, getUniqueDefaultShirtColor, REAL_EXCEL_DATASET } from './config/constants';
 import { PlusIcon, CalendarIcon, TrophyIcon, EditIcon, TrashIcon, ChevronDownIcon, ChevronUpIcon, LockIcon, CloseIcon, FlagIcon, SportIcon } from './components/Icons';
 import { Modal } from './components/Modal';
 import { ClubSelectorModal } from './components/ClubSelectorModal';
@@ -369,6 +369,7 @@ export default function App() {
                                 await setDoc(doc(db, `artifacts/${APP_ID}/public/data/players`, newPlayerId), {
                                     id: newPlayerId,
                                     name: prevPlayer.name,
+                                    gradeGroup: prevPlayer.gradeGroup || '',
                                     teamId: newTeamId
                                 });
                             }
@@ -378,43 +379,33 @@ export default function App() {
             }
 
             if (!cloned) {
-                const defaultLeagues = ['Grupos A Varonil', 'Grupos A Femenil', 'Grupos B Varonil', 'Grupos B Femenil'];
-                const sampleStudents = [
-                    { name: 'Gabriel Santos', number: '10' },
-                    { name: 'Mateo Hernández', number: '7' },
-                    { name: 'Santiago López', number: '9' },
-                    { name: 'Leonardo Ramírez', number: '11' },
-                    { name: 'Diego Morales', number: '4' },
-                    { name: 'Sofía Castro', number: '8' }
-                ];
-                for (const lName of defaultLeagues) {
-                    const newLeagueId = `league_${tournamentId}_${lName.replace(/\s+/g, '_')}`;
+                for (const groupData of REAL_EXCEL_DATASET) {
+                    const newLeagueId = `league_${tournamentId}_${groupData.leagueName.replace(/\s+/g, '_')}`;
                     await setDoc(doc(db, `artifacts/${APP_ID}/public/data/leagues`, newLeagueId), {
                         id: newLeagueId,
-                        name: lName,
+                        name: groupData.leagueName,
                         sport: selectedSport,
                         tournamentId,
                         matchDay: 3
                     });
 
-                    for (let i = 1; i <= 4; i++) {
-                        const newTeamId = `team_${newLeagueId}_${i}`;
-                        const club = CHAMPIONS_LEAGUE_CLUBS[(i - 1 + Math.floor(Math.random() * CHAMPIONS_LEAGUE_CLUBS.length)) % CHAMPIONS_LEAGUE_CLUBS.length];
+                    for (const teamData of groupData.teams) {
+                        const newTeamId = `team_${newLeagueId}_${teamData.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
                         await setDoc(doc(db, `artifacts/${APP_ID}/public/data/teams`, newTeamId), {
                             id: newTeamId,
-                            name: club.name,
+                            name: teamData.name,
                             leagueId: newLeagueId,
-                            logoUrl: club.logoUrl,
-                            shirtColorName: club.shirtColorName || 'Royal',
-                            shirtColorHex: club.shirtColorHex || '#1565C0'
+                            logoUrl: teamData.logoUrl,
+                            shirtColorName: teamData.shirtColorName,
+                            shirtColorHex: teamData.shirtColorHex
                         });
 
-                        for (const s of sampleStudents) {
+                        for (const playerData of teamData.players) {
                             const newPlayerId = `player_${newTeamId}_${Math.random().toString(36).substring(2, 7)}`;
                             await setDoc(doc(db, `artifacts/${APP_ID}/public/data/players`, newPlayerId), {
                                 id: newPlayerId,
-                                name: s.name,
-                                number: s.number,
+                                name: playerData.name,
+                                gradeGroup: playerData.gradeGroup,
                                 teamId: newTeamId
                             });
                         }

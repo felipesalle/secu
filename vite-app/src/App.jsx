@@ -188,6 +188,110 @@ export default function App() {
 
     const showMessage = (msg) => { setModalMessage(msg); setShowModal(true); };
 
+    // --- Carga Automática / Manual de la Nómina Real del Excel a Firestore ---
+    const [hasAutoSeeded, setHasAutoSeeded] = useState(false);
+
+    const handleSeedExcelData = async (targetTournamentId = null) => {
+        setIsCreatingTournament(true);
+        try {
+            let tourId = targetTournamentId || selectedTournamentId;
+            
+            // Si no hay ningún torneo, creamos uno por defecto
+            if (!tourId) {
+                tourId = 'tourn_secundaria_' + Date.now();
+                await setDoc(doc(db, `artifacts/${APP_ID}/public/data/tournaments`, tourId), {
+                    id: tourId,
+                    name: 'Torneo Secundaria 2025-2026',
+                    sport: 'Fútbol',
+                    inaugurationDate: inaugurationDate || '',
+                    createdAt: new Date().toISOString()
+                });
+                setSelectedTournamentId(tourId);
+            }
+
+            // Borrar ligas, equipos y jugadores anteriores desalineados de este torneo
+            const targetLeagues = leagues.filter(l => l.tournamentId === tourId || !l.tournamentId);
+            const targetTeams = teams.filter(t => targetLeagues.some(l => l.id === t.leagueId) || !t.leagueId);
+            const targetPlayers = players.filter(p => targetTeams.some(t => t.id === p.teamId) || !p.teamId);
+
+            for (const p of targetPlayers) {
+                await deleteDoc(doc(db, `artifacts/${APP_ID}/public/data/players`, p.id));
+            }
+            for (const t of targetTeams) {
+                await deleteDoc(doc(db, `artifacts/${APP_ID}/public/data/teams`, t.id));
+            }
+            for (const l of targetLeagues) {
+                await deleteDoc(doc(db, `artifacts/${APP_ID}/public/data/leagues`, l.id));
+            }
+
+            // Poblar las 4 ligas, 20 equipos y 160+ alumnos del REAL_EXCEL_DATASET
+            let totalTeamsCount = 0;
+            let totalPlayersCount = 0;
+
+            for (const groupData of REAL_EXCEL_DATASET) {
+                const newLeagueId = `league_${tourId}_${groupData.leagueName.replace(/\s+/g, '_')}`;
+                await setDoc(doc(db, `artifacts/${APP_ID}/public/data/leagues`, newLeagueId), {
+                    id: newLeagueId,
+                    name: groupData.leagueName,
+                    sport: 'Fútbol',
+                    tournamentId: tourId,
+                    matchDay: 3
+                });
+
+                for (const teamData of groupData.teams) {
+                    totalTeamsCount++;
+                    const newTeamId = `team_${newLeagueId}_${teamData.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
+                    await setDoc(doc(db, `artifacts/${APP_ID}/public/data/teams`, newTeamId), {
+                        id: newTeamId,
+                        name: teamData.name,
+                        leagueId: newLeagueId,
+                        logoUrl: teamData.logoUrl,
+                        shirtColorName: teamData.shirtColorName,
+                        shirtColorHex: teamData.shirtColorHex
+                    });
+
+                    let playerIdx = 0;
+                    for (const playerData of teamData.players) {
+                        totalPlayersCount++;
+                        playerIdx++;
+                        const newPlayerId = `player_${newTeamId}_${playerIdx}_${Math.random().toString(36).substring(2, 7)}`;
+                        await setDoc(doc(db, `artifacts/${APP_ID}/public/data/players`, newPlayerId), {
+                            id: newPlayerId,
+                            name: playerData.name,
+                            gradeGroup: playerData.gradeGroup || '',
+                            teamId: newTeamId
+                        });
+                    }
+                }
+            }
+
+            sendTelegramNotification(`⚡ Base de datos sincronizada con la Nómina del Excel (${totalTeamsCount} equipos, ${totalPlayersCount} alumnos)`, user?.email);
+            showMessage(`🎉 ¡Nómina Oficial cargada en Firebase! Se registraron ${totalTeamsCount} equipos y ${totalPlayersCount} alumnos reales con su Grado y Grupo.`);
+        } catch (err) {
+            console.error("Error al poblar la base de datos:", err);
+            showMessage("Error al cargar la nómina en la base de datos.");
+        } finally {
+            setIsCreatingTournament(false);
+        }
+    };
+
+    // Auto-ejecución si detectamos que la base de datos no tiene alumnos o contiene equipos desactualizados de prueba
+    useEffect(() => {
+        if (!hasAutoSeeded && !isCreatingTournament) {
+            if (tournaments.length > 0) {
+                const hasOldTeams = teams.some(t => t.name === 'Chelsea FC' || t.name === 'SL Benfica');
+                const hasNoPlayers = players.length === 0;
+                if (hasOldTeams || hasNoPlayers) {
+                    setHasAutoSeeded(true);
+                    handleSeedExcelData(sortedTournaments[0]?.id);
+                }
+            } else {
+                setHasAutoSeeded(true);
+                handleSeedExcelData(null);
+            }
+        }
+    }, [tournaments, teams, players, hasAutoSeeded, isCreatingTournament, sortedTournaments]);
+
     // --- Ayudantes de Datos Filtrados por Torneo Seleccionado ---
     const visibleLeagues = useMemo(() => leagues.filter(l => l.tournamentId === currentTournament?.id), [leagues, currentTournament]);
     const visibleTeams = useMemo(() => teams.filter(t => visibleLeagues.some(l => l.id === t.leagueId)), [teams, visibleLeagues]);
@@ -781,19 +885,30 @@ export default function App() {
                                     Selección de Torneo
                                 </h3>
                                 {sortedTournaments.length > 0 ? (
-                                    <div className="flex flex-col md:flex-row items-stretch md:items-center gap-4">
-                                        <select
-                                            value={currentTournament?.id || ''}
-                                            onChange={(e) => setSelectedTournamentId(e.target.value)}
-                                            className="input-modern flex-1"
-                                        >
-                                            {sortedTournaments.map(t => (
-                                                <option key={t.id} value={t.id}>{t.name} ({t.sport || 'Fútbol'})</option>
-                                            ))}
-                                        </select>
-                                        <button onClick={handleDeleteTournament} className="btn-danger flex items-center justify-center whitespace-nowrap">
-                                            <TrashIcon className="w-5 h-5 mr-2" /> Eliminar
-                                        </button>
+                                    <div className="space-y-4">
+                                        <div className="flex flex-col md:flex-row items-stretch md:items-center gap-4">
+                                            <select
+                                                value={currentTournament?.id || ''}
+                                                onChange={(e) => setSelectedTournamentId(e.target.value)}
+                                                className="input-modern flex-1"
+                                            >
+                                                {sortedTournaments.map(t => (
+                                                    <option key={t.id} value={t.id}>{t.name} ({t.sport || 'Fútbol'})</option>
+                                                ))}
+                                            </select>
+                                            <button onClick={handleDeleteTournament} className="btn-danger flex items-center justify-center whitespace-nowrap">
+                                                <TrashIcon className="w-5 h-5 mr-2" /> Eliminar
+                                            </button>
+                                        </div>
+                                        <div className="pt-2 border-t border-slate-100 dark:border-slate-700/60">
+                                            <button
+                                                onClick={() => handleSeedExcelData(currentTournament?.id)}
+                                                disabled={isCreatingTournament}
+                                                className="btn-primary w-full py-2.5 px-4 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold font-outfit flex items-center justify-center shadow-md transition-all cursor-pointer"
+                                            >
+                                                ⚡ Sincronizar Nómina Oficial del Excel (20 Equipos + 160+ Alumnos con Grado/Grupo)
+                                            </button>
+                                        </div>
                                     </div>
                                 ) : (
                                     <p className="text-center text-slate-500 dark:text-slate-400 py-8 bg-slate-50 dark:bg-slate-900/50 rounded-xl">

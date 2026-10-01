@@ -217,11 +217,15 @@ export default function App() {
                 setSelectedTournamentId(tourId);
             }
 
-            // Borrar ligas, equipos y jugadores anteriores desalineados de este torneo
+            // Borrar ligas, equipos, jugadores y partidos anteriores de este torneo para evitar duplicados u orígenes huérfanos
             const targetLeagues = leagues.filter(l => l.tournamentId === tourId || !l.tournamentId);
             const targetTeams = teams.filter(t => targetLeagues.some(l => l.id === t.leagueId) || !t.leagueId);
             const targetPlayers = players.filter(p => targetTeams.some(t => t.id === p.teamId) || !p.teamId);
+            const targetMatches = matches.filter(m => targetLeagues.some(l => l.id === m.leagueId) || !m.leagueId);
 
+            for (const m of targetMatches) {
+                await deleteDoc(doc(db, `artifacts/${APP_ID}/public/data/matches`, m.id));
+            }
             for (const p of targetPlayers) {
                 await deleteDoc(doc(db, `artifacts/${APP_ID}/public/data/players`, p.id));
             }
@@ -590,6 +594,13 @@ export default function App() {
 
             let totalMatchesCreated = 0;
             const targetWednesday = currentTournament?.inaugurationDate ? getWednesdayForDate(currentTournament.inaugurationDate) : null;
+
+            // Limpiar previamente todos los partidos del torneo para evitar partidos duplicados u orígenes huérfanos
+            if (visibleMatches.length > 0) {
+                for (const m of visibleMatches) {
+                    await deleteDoc(doc(db, `artifacts/${APP_ID}/public/data/matches`, m.id));
+                }
+            }
 
             for (const league of visibleLeagues) {
                 const leagueTeams = visibleTeams.filter(t => t.leagueId === league.id);

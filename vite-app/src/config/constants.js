@@ -574,3 +574,36 @@ export const sortLeagues = (a, b) => {
     if (indexA !== indexB) return indexA - indexB;
     return (a?.name || '').localeCompare(b?.name || '');
 };
+
+// --- Helper para Parsear Alumnos con Nombre, Apellidos, Grado y Grupo ---
+export const parsePlayerInputLine = (line) => {
+    if (!line || !line.trim()) return null;
+    const raw = line.trim();
+
+    // 1. Si el usuario usó coma (ej: "Juan Pablo Aguirre Marti, 3 A" o "Juan Pablo Aguirre Marti, 3A")
+    if (raw.includes(',')) {
+        const parts = raw.split(',');
+        const name = parts[0].trim();
+        const rawGroup = parts.slice(1).join(',').trim();
+        const gradeGroup = rawGroup.replace(/[\sº°\-_]/g, '').toUpperCase();
+        return { name, gradeGroup };
+    }
+
+    // 2. Coincidencia por regex al final de la línea para patrones como "3 A", "3A", "1B", "2-A", "3ºA"
+    const match = raw.match(/^(.*?)\s+([1-3][\sº°\-_]*[A-Fa-f])$/i);
+    if (match) {
+        const name = match[1].trim();
+        const gradeGroup = match[2].replace(/[\sº°\-_]/g, '').toUpperCase();
+        return { name, gradeGroup };
+    }
+
+    // 3. Fallback: sin grado/grupo detectado
+    return { name: raw, gradeGroup: '' };
+};
+
+export const parseMultiLinePlayerInput = (text) => {
+    if (!text) return [];
+    const lines = text.split(/\r?\n/);
+    return lines.map(line => parsePlayerInputLine(line)).filter(Boolean);
+};
+

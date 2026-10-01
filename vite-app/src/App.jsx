@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { collection, onSnapshot, doc, setDoc, addDoc, deleteDoc } from 'firebase/firestore';
 import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
 import { db, auth, APP_ID } from './config/firebase';
-import { sendTelegramNotification, CHAMPIONS_LEAGUE_CLUBS, sortLeagues, getSportScoringInfo, dayOptions, getUniqueDefaultShirtColor, REAL_EXCEL_DATASET } from './config/constants';
+import { sendTelegramNotification, CHAMPIONS_LEAGUE_CLUBS, sortLeagues, getSportScoringInfo, dayOptions, getUniqueDefaultShirtColor, REAL_EXCEL_DATASET, parseMultiLinePlayerInput } from './config/constants';
 import { PlusIcon, CalendarIcon, TrophyIcon, EditIcon, TrashIcon, ChevronDownIcon, ChevronUpIcon, LockIcon, CloseIcon, FlagIcon, SportIcon } from './components/Icons';
 import { Modal } from './components/Modal';
 import { ClubSelectorModal } from './components/ClubSelectorModal';
@@ -134,6 +134,8 @@ export default function App() {
         return () => unsubscribe();
     }, []);
 
+    const [isInitialDataLoaded, setIsInitialDataLoaded] = useState(false);
+
     // --- Subscripción Real-Time a Firestore ---
     useEffect(() => {
         const collectionsList = ['tournaments', 'leagues', 'teams', 'players', 'matches'];
@@ -145,11 +147,17 @@ export default function App() {
             matches: setMatches
         };
 
+        const loadedSets = new Set();
+
         const unsubscribers = collectionsList.map(collName => {
             const path = `artifacts/${APP_ID}/public/data/${collName}`;
             return onSnapshot(collection(db, path), (snapshot) => {
                 const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 setters[collName](data);
+                loadedSets.add(collName);
+                if (loadedSets.size >= collectionsList.length) {
+                    setIsInitialDataLoaded(true);
+                }
             }, (error) => console.error(`Error loading ${collName}:`, error));
         });
 
@@ -275,22 +283,18 @@ export default function App() {
         }
     };
 
-    // Auto-ejecución si detectamos que la base de datos no tiene alumnos o contiene equipos desactualizados de prueba
+    // Auto-ejecución si detectamos que la base de datos no tiene alumnos o contiene equipos desactualizados de prueba (solo tras cargar Firestore)
     useEffect(() => {
-        if (!hasAutoSeeded && !isCreatingTournament) {
-            if (tournaments.length > 0) {
-                const hasOldTeams = teams.some(t => t.name === 'Chelsea FC' || t.name === 'SL Benfica');
-                const hasNoPlayers = players.length === 0;
-                if (hasOldTeams || hasNoPlayers) {
-                    setHasAutoSeeded(true);
-                    handleSeedExcelData(sortedTournaments[0]?.id);
-                }
-            } else {
+        if (isInitialDataLoaded && !hasAutoSeeded && !isCreatingTournament) {
+            const hasOldTeams = teams.some(t => t.name === 'Chelsea FC' || t.name === 'SL Benfica');
+            const hasNoPlayers = players.length === 0;
+            if (tournaments.length === 0 || hasOldTeams || hasNoPlayers) {
                 setHasAutoSeeded(true);
-                handleSeedExcelData(null);
+                const targetId = sortedTournaments.length > 0 ? sortedTournaments[0].id : null;
+                handleSeedExcelData(targetId);
             }
         }
-    }, [tournaments, teams, players, hasAutoSeeded, isCreatingTournament, sortedTournaments]);
+    }, [isInitialDataLoaded, tournaments, teams, players, hasAutoSeeded, isCreatingTournament, sortedTournaments]);
 
     // --- Ayudantes de Datos Filtrados por Torneo Seleccionado ---
     const visibleLeagues = useMemo(() => leagues.filter(l => l.tournamentId === currentTournament?.id), [leagues, currentTournament]);
@@ -1483,34 +1487,87 @@ export default function App() {
                 }}
             />
 
-            {/* Modal Añadir Jugador */}
+            {/* Modal Añadir Jugadores (Modo Individual o Pegado Masivo con Grado/Grupo) */}
             {showAddPlayerModal && selectedTeamForAddPlayer && (
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
-                    <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 max-w-md w-full space-y-4 shadow-2xl border border-slate-100 dark:border-slate-700">
-                        <h4 className="text-xl font-bold font-outfit text-slate-800 dark:text-white">Añadir Alumno a {selectedTeamForAddPlayer.name}</h4>
-                        <input
-                            type="text"
-                            placeholder="Nombre del alumno (ej. Gabriel Santos)"
-                            value={newPlayerName}
-                            onChange={(e) => setNewPlayerName(e.target.value)}
-                            className="input-modern"
-                        />
-                        <div className="flex gap-3">
+                    <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 max-w-lg w-full space-y-4 shadow-2xl border border-slate-100 dark:border-slate-700">
+                        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-3">
+                            <h4 className="text-xl font-bold font-outfit text-slate-800 dark:text-white flex items-center">
+                                👥 Inscripción de Alumnos a {selectedTeamForAddPlayer.name}
+                            </h4>
+                            <button onClick={() => setShowAddPlayerModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-white font-bold text-lg cursor-pointer">
+                                ✕
+                            </button>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 font-outfit">
+                                Escribe o pega la lista de alumnos (uno por línea):
+                            </label>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                                Formato soportado: <span className="font-mono bg-slate-100 dark:bg-slate-900 px-1.5 py-0.5 rounded text-indigo-600 dark:text-indigo-400 font-bold">Nombre(s) Apellidos, Grado y Grupo</span> (ej. <span className="italic">Juan Pablo Aguirre Marti, 3 A</span>)
+                            </p>
+                            <textarea
+                                rows={5}
+                                placeholder={"Ejemplo:\nJuan Pablo Aguirre Marti, 3 A\nGabriel Santos, 1 B\nSabina Morales Nuñez, 2 B"}
+                                value={newPlayerName}
+                                onChange={(e) => setNewPlayerName(e.target.value)}
+                                className="input-modern w-full font-mono text-sm leading-relaxed"
+                            />
+                        </div>
+
+                        {/* Previsualización en Tiempo Real */}
+                        {(() => {
+                            const parsedList = parseMultiLinePlayerInput(newPlayerName);
+                            if (parsedList.length === 0) return null;
+                            return (
+                                <div className="p-3 bg-slate-50 dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2 max-h-36 overflow-y-auto">
+                                    <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center justify-between">
+                                        <span>✅ {parsedList.length} alumno(s) listos para registrar:</span>
+                                    </div>
+                                    <div className="space-y-1">
+                                        {parsedList.map((p, idx) => (
+                                            <div key={idx} className="flex items-center justify-between text-xs py-0.5 border-b border-slate-100 dark:border-slate-800/60 last:border-none">
+                                                <span className="font-semibold text-slate-800 dark:text-slate-200">{p.name}</span>
+                                                {p.gradeGroup ? (
+                                                    <span className="bg-indigo-100 dark:bg-indigo-900/60 text-[#101097] dark:text-blue-300 px-2 py-0.5 rounded-full font-bold text-[10px]">
+                                                        {p.gradeGroup}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-slate-400 text-[10px]">Sin Grado/Grupo</span>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            );
+                        })()}
+
+                        <div className="flex gap-3 pt-2">
                             <button
                                 onClick={async () => {
-                                    if (newPlayerName.trim()) {
-                                        await addDoc(collection(db, `artifacts/${APP_ID}/public/data/players`), {
-                                            name: newPlayerName.trim(),
-                                            teamId: selectedTeamForAddPlayer.id
-                                        });
+                                    const parsedList = parseMultiLinePlayerInput(newPlayerName);
+                                    if (parsedList.length > 0) {
+                                        let savedCount = 0;
+                                        for (const p of parsedList) {
+                                            const newPlayerId = `player_${selectedTeamForAddPlayer.id}_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+                                            await setDoc(doc(db, `artifacts/${APP_ID}/public/data/players`, newPlayerId), {
+                                                id: newPlayerId,
+                                                name: p.name,
+                                                gradeGroup: p.gradeGroup || '',
+                                                teamId: selectedTeamForAddPlayer.id
+                                            });
+                                            savedCount++;
+                                        }
                                         setNewPlayerName('');
                                         setShowAddPlayerModal(false);
-                                        showMessage("Alumno añadido con éxito.");
+                                        showMessage(`🎉 ¡Se registraron ${savedCount} alumno(s) exitosamente en ${selectedTeamForAddPlayer.name}!`);
                                     }
                                 }}
-                                className="btn-primary flex-1"
+                                disabled={parseMultiLinePlayerInput(newPlayerName).length === 0}
+                                className={`btn-primary flex-1 ${parseMultiLinePlayerInput(newPlayerName).length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
                             >
-                                Guardar Alumno
+                                Guardar {parseMultiLinePlayerInput(newPlayerName).length > 0 ? `${parseMultiLinePlayerInput(newPlayerName).length} Alumno(s)` : 'Alumnos'}
                             </button>
                             <button onClick={() => setShowAddPlayerModal(false)} className="btn-secondary flex-1">Cancelar</button>
                         </div>

@@ -196,14 +196,27 @@ export default function App() {
 
     const showMessage = (msg) => { setModalMessage(msg); setShowModal(true); };
 
-    // --- Carga Automática / Manual de la Nómina Real del Excel a Firestore ---
-    const [hasAutoSeeded, setHasAutoSeeded] = useState(false);
-
+    // --- Carga EXCLUSIVAMENTE MANUAL de la Nómina Real del Excel a Firestore con Salvaguarda ---
     const handleSeedExcelData = async (targetTournamentId = null) => {
+        let tourId = targetTournamentId || selectedTournamentId;
+
+        // Salvaguarda Obligatoria: Si el torneo o sus ligas ya cuentan con equipos/jugadores registrados, requerir confirmación
+        const existingLeagues = leagues.filter(l => l.tournamentId === tourId);
+        const existingTeams = teams.filter(t => existingLeagues.some(l => l.id === t.leagueId));
+        const existingPlayers = players.filter(p => existingTeams.some(t => t.id === p.teamId));
+
+        if (existingTeams.length > 0 || existingPlayers.length > 0) {
+            const confirmed = window.confirm(
+                `⚠️ ¡ADVERTENCIA DE SEGURIDAD: SOBREESCRITURA DE DATOS!\n\n` +
+                `El torneo seleccionado ya contiene ${existingTeams.length} equipos y ${existingPlayers.length} alumnos registrados en Firestore.\n\n` +
+                `Si continúas, se ELIMINARÁN los registros actuales y sus IDs, lo que romperá cualquier calendario de partidos generado previamente.\n\n` +
+                `¿Deseas sobreescribir y volver a cargar la nómina oficial del Excel?`
+            );
+            if (!confirmed) return;
+        }
+
         setIsCreatingTournament(true);
         try {
-            let tourId = targetTournamentId || selectedTournamentId;
-            
             // Si no hay ningún torneo, creamos uno por defecto
             if (!tourId) {
                 tourId = 'tourn_secundaria_' + Date.now();
@@ -217,7 +230,7 @@ export default function App() {
                 setSelectedTournamentId(tourId);
             }
 
-            // Borrar ligas, equipos, jugadores y partidos anteriores de este torneo para evitar duplicados u orígenes huérfanos
+            // Borrar ligas, equipos, jugadores y partidos anteriores de este torneo
             const targetLeagues = leagues.filter(l => l.tournamentId === tourId || !l.tournamentId);
             const targetTeams = teams.filter(t => targetLeagues.some(l => l.id === t.leagueId) || !t.leagueId);
             const targetPlayers = players.filter(p => targetTeams.some(t => t.id === p.teamId) || !p.teamId);
@@ -277,7 +290,7 @@ export default function App() {
                 }
             }
 
-            sendTelegramNotification(`⚡ Base de datos sincronizada con la Nómina del Excel (${totalTeamsCount} equipos, ${totalPlayersCount} alumnos)`, user?.email);
+            sendTelegramNotification(`⚡ Base de datos sincronizada manualmente con la Nómina del Excel (${totalTeamsCount} equipos, ${totalPlayersCount} alumnos)`, user?.email);
             showMessage(`🎉 ¡Nómina Oficial cargada en Firebase! Se registraron ${totalTeamsCount} equipos y ${totalPlayersCount} alumnos reales con su Grado y Grupo.`);
         } catch (err) {
             console.error("Error al poblar la base de datos:", err);
@@ -286,19 +299,6 @@ export default function App() {
             setIsCreatingTournament(false);
         }
     };
-
-    // Auto-ejecución si detectamos que la base de datos no tiene alumnos o contiene equipos desactualizados de prueba (solo tras cargar Firestore)
-    useEffect(() => {
-        if (isInitialDataLoaded && !hasAutoSeeded && !isCreatingTournament) {
-            const hasOldTeams = teams.some(t => t.name === 'Chelsea FC' || t.name === 'SL Benfica');
-            const hasNoPlayers = players.length === 0;
-            if (tournaments.length === 0 || hasOldTeams || hasNoPlayers) {
-                setHasAutoSeeded(true);
-                const targetId = sortedTournaments.length > 0 ? sortedTournaments[0].id : null;
-                handleSeedExcelData(targetId);
-            }
-        }
-    }, [isInitialDataLoaded, tournaments, teams, players, hasAutoSeeded, isCreatingTournament, sortedTournaments]);
 
     // --- Ayudantes de Datos Filtrados por Torneo Seleccionado ---
     const visibleLeagues = useMemo(() => leagues.filter(l => l.tournamentId === currentTournament?.id), [leagues, currentTournament]);

@@ -21,7 +21,7 @@ os.makedirs(DIR_INDIVIDUAL, exist_ok=True)
 os.makedirs(DIR_PREVIEWS, exist_ok=True)
 
 TEAMS_CONFIG = [
-    {"filename": "PANCARTA_AEK_ATENAS.pdf", "team": "AEK Atenas", "lines": ["AEK", "ATENAS"], "logoUrl": "https://crests.football-data.org/1031.png"},
+    {"filename": "PANCARTA_AEK_ATENAS.pdf", "team": "AEK Atenas", "lines": ["AEK", "ATENAS"], "logoUrl": "https://upload.wikimedia.org/wikipedia/en/thumb/0/04/AEK_Athens_FC_logo.svg/500px-AEK_Athens_FC_logo.svg.png"},
     {"filename": "PANCARTA_ARSENAL.pdf", "team": "Arsenal FC", "lines": ["ARSENAL", "FC"], "logoUrl": "https://crests.football-data.org/57.png"},
     {"filename": "PANCARTA_ASTON_VILLA.pdf", "team": "Aston Villa", "lines": ["ASTON", "VILLA"], "logoUrl": "https://crests.football-data.org/58.png"},
     {"filename": "PANCARTA_ATLETICO_MADRID.pdf", "team": "Atlético de Madrid", "lines": ["ATLÉTICO", "DE MADRID"], "logoUrl": "https://crests.football-data.org/78.png"},
@@ -29,7 +29,7 @@ TEAMS_CONFIG = [
     {"filename": "PANCARTA_BAYERN_MUNCHEN.pdf", "team": "Bayern München", "lines": ["BAYERN", "MÜNCHEN"], "logoUrl": "https://crests.football-data.org/5.png"},
     {"filename": "PANCARTA_BORUSSIA_DORTMUND.pdf", "team": "Borussia Dortmund", "lines": ["BORUSSIA", "DORTMUND"], "logoUrl": "https://crests.football-data.org/4.png"},
     {"filename": "PANCARTA_CLUB_BRUGGE.pdf", "team": "Club Brugge KV", "lines": ["CLUB", "BRUGGE"], "logoUrl": "https://crests.football-data.org/548.png"},
-    {"filename": "PANCARTA_COMO_1907.pdf", "team": "Como 1907", "lines": ["COMO", "1907"], "logoUrl": "https://crests.football-data.org/1057.png"},
+    {"filename": "PANCARTA_COMO_1907.pdf", "team": "Como 1907", "lines": ["COMO", "1907"], "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/2/2c/Logo_Como_1907_2019.png"},
     {"filename": "PANCARTA_FEYENOORD.pdf", "team": "Feyenoord", "lines": ["FEYE", "NOORD"], "logoUrl": "https://crests.football-data.org/675.png"},
     {"filename": "PANCARTA_GALATASARAY.pdf", "team": "Galatasaray", "lines": ["GALATA", "SARAY"], "logoUrl": "https://crests.football-data.org/610.png"},
     {"filename": "PANCARTA_INTER_MILAN.pdf", "team": "Inter de Milán", "lines": ["INTER DE", "MILÁN"], "logoUrl": "https://crests.football-data.org/108.png"},
@@ -52,7 +52,8 @@ def get_logo_image(url):
     if url in image_cache:
         return image_cache[url]
     try:
-        resp = requests.get(url, timeout=10)
+        headers = {'User-Agent': 'SecuApp/1.0 (https://github.com/felipesalle/secu)'}
+        resp = requests.get(url, headers=headers, timeout=10)
         if resp.status_code == 200:
             pil_img = Image.open(BytesIO(resp.content))
             if pil_img.mode in ('RGBA', 'LA') or (pil_img.mode == 'P' and 'transparency' in pil_img.info):
@@ -67,7 +68,7 @@ def get_logo_image(url):
         print(f"Error fetching image {url}: {e}")
     return None
 
-def compute_equal_font_size(c_dummy, line1, line2, x_line1=370.0, x_line2=280.0, margin_right=40.0):
+def compute_equal_font_size(c_dummy, line1, line2, x_line1=370.0, x_line2=70.0, margin_right=40.0):
     max_w1 = PAGE_WIDTH - margin_right - x_line1
     max_w2 = PAGE_WIDTH - margin_right - x_line2
     max_h = 320.0  # Max height per half
@@ -77,7 +78,7 @@ def compute_equal_font_size(c_dummy, line1, line2, x_line1=370.0, x_line2=280.0,
         w1 = c_dummy.stringWidth(line1, FONT_NAME, font_size)
         w2 = c_dummy.stringWidth(line2, FONT_NAME, font_size)
         
-        # Approx cap height = 0.72 * font_size
+        # Cap height approx = 0.72 * font_size
         h = font_size * 0.72
         
         if w1 <= max_w1 and w2 <= max_w2 and h <= max_h:
@@ -92,7 +93,7 @@ def draw_banner_page(c, item, logo_reader):
     c.setFillColorRGB(1, 1, 1)
     c.rect(0, 0, PAGE_WIDTH, PAGE_HEIGHT, fill=True, stroke=False)
     
-    # 2. Horizontal Divider Line (Middle of page, Y = 396 pt top-down, Y = 396 ReportLab coords)
+    # 2. Horizontal Divider Line (Middle of page, Y = 396 pt)
     divider_y = 396.0
     c.setStrokeColorRGB(0.0, 0.584, 0.853)  # #0095DA cyan/blue
     c.setLineWidth(1.5)
@@ -127,7 +128,7 @@ def draw_banner_page(c, item, logo_reader):
     line1, line2 = item["lines"][0], item["lines"][1]
     
     x_line1 = 370.0
-    x_line2 = 280.0
+    x_line2 = 70.0  # Align bottom line to left margin to waste less paper when cutting
     
     # Compute single font size used for BOTH line1 and line2
     font_size = compute_equal_font_size(c, line1, line2, x_line1=x_line1, x_line2=x_line2)
@@ -136,17 +137,15 @@ def draw_banner_page(c, item, logo_reader):
     c.setFont(FONT_NAME, font_size)
     
     # Top Half baseline: centered in upper half (Y from 396 to 792)
-    # Midpoint of upper half is Y = 594 pt. Baseline is offset by approx cap_height/2 = (font_size * 0.72) / 2
     y_line1_baseline = 594.0 - (font_size * 0.72 / 2.0) + (font_size * 0.1)
     
     # Bottom Half baseline: centered in lower half (Y from 0 to 396)
-    # Midpoint of lower half is Y = 198 pt.
     y_line2_baseline = 198.0 - (font_size * 0.72 / 2.0) + (font_size * 0.1)
     
     # Draw Line 1 (Top right)
     c.drawString(x_line1, y_line1_baseline, line1)
     
-    # Draw Line 2 (Bottom)
+    # Draw Line 2 (Bottom left)
     c.drawString(x_line2, y_line2_baseline, line2)
 
 def generate_preview_png(pdf_path, png_path):
@@ -159,7 +158,7 @@ def generate_preview_png(pdf_path, png_path):
 def main():
     dummy_c = canvas.Canvas("scratch_dummy.pdf")
     
-    print("--- Starting Banner Generation (2-Half Divided Layout) ---")
+    print("--- Starting Banner Generation (Left-Aligned Bottom Line Layout) ---")
     
     c_general = canvas.Canvas(PATH_GENERAL, pagesize=(PAGE_WIDTH, PAGE_HEIGHT))
     

@@ -843,3 +843,164 @@ export const printGroupShirtColorRosterWindow = (visLeagues, visTeams, visPlayer
 export const generateGroupShirtColorRosterPdf = (visLeagues, visTeams, visPlayers, showMessage) => {
     printGroupShirtColorRosterWindow(visLeagues, visTeams, visPlayers, showMessage, true);
 };
+
+// --- Helper para División Visual Equilibrada del Nombre del Equipo en Pancartas ---
+export const splitTeamNameForBanner = (name) => {
+    if (!name) return ['EQUIPO', ''];
+    const uppercase = name.trim().toUpperCase();
+
+    if (uppercase === 'AEK ATENAS') return ['AEK', 'ATENAS'];
+    if (uppercase === 'ARSENAL FC' || uppercase === 'ARSENAL') return ['ARSENAL', 'FC'];
+    if (uppercase === 'ASTON VILLA') return ['ASTON', 'VILLA'];
+    if (uppercase === 'ATLÉTICO DE MADRID' || uppercase === 'ATLETICO DE MADRID') return ['ATLÉTICO DE', 'MADRID'];
+    if (uppercase === 'FC BARCELONA' || uppercase === 'BARCELONA') return ['FC', 'BARCELONA'];
+    if (uppercase === 'BAYERN MÜNCHEN' || uppercase === 'BAYERN MUNICH') return ['BAYERN', 'MÜNCHEN'];
+    if (uppercase === 'BORUSSIA DORTMUND') return ['BORUSSIA', 'DORTMUND'];
+    if (uppercase === 'CLUB BRUGGE KV' || uppercase === 'CLUB BRUGGE') return ['CLUB', 'BRUGGE'];
+    if (uppercase === 'COMO 1907') return ['COMO', '1907'];
+    if (uppercase === 'FEYENOORD') return ['FEYE', 'NOORD'];
+    if (uppercase === 'GALATASARAY') return ['GALATA', 'SARAY'];
+    if (uppercase === 'INTER DE MILÁN' || uppercase === 'INTER DE MILAN') return ['INTER DE', 'MILÁN'];
+    if (uppercase === 'JUVENTUS FC' || uppercase === 'JUVENTUS') return ['JUVENTUS', 'FC'];
+    if (uppercase === 'RB LEIPZIG') return ['RB', 'LEIPZIG'];
+    if (uppercase === 'LILLE OSC' || uppercase === 'LILLE') return ['LILLE', 'OSC'];
+    if (uppercase === 'LIVERPOOL FC' || uppercase === 'LIVERPOOL') return ['LIVERPOOL', 'FC'];
+    if (uppercase === 'MANCHESTER CITY') return ['MANCHESTER', 'CITY'];
+    if (uppercase === 'MANCHESTER UNITED') return ['MANCHESTER', 'UNITED'];
+    if (uppercase.includes('PARIS SAINT')) return ['PARIS SAINT-', 'GERMAIN'];
+    if (uppercase === 'REAL MADRID') return ['REAL', 'MADRID'];
+    if (uppercase === 'SPORTING CP') return ['SPORTING', 'CP'];
+    if (uppercase === 'VILLARREAL CF' || uppercase === 'VILLARREAL') return ['VILLARREAL', 'CF'];
+
+    const words = uppercase.split(/\s+/);
+    if (words.length >= 2) {
+        const mid = Math.ceil(words.length / 2);
+        return [words.slice(0, mid).join(' '), words.slice(mid).join(' ')];
+    }
+
+    if (uppercase.length > 5) {
+        const half = Math.ceil(uppercase.length / 2);
+        return [uppercase.slice(0, half), uppercase.slice(half)];
+    }
+
+    return [uppercase, ''];
+};
+
+// --- Generador / Vista Previa Imprimible de Pancartas Tabloide (17" x 11" Horizontal) ---
+export const printTeamBannersWindow = (visTeams, showMessage, autoPrint = false) => {
+    if (!visTeams || visTeams.length === 0) {
+        return showMessage("No hay equipos disponibles para generar pancartas.");
+    }
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+        return showMessage("Permite las ventanas emergentes en tu navegador para ver las pancartas.");
+    }
+
+    let htmlContent = `
+        <!DOCTYPE html>
+        <html lang="es">
+        <head>
+            <meta charset="UTF-8">
+            <title>Pancartas Oficiales de Equipos - Secundaria (17x11" Tabloide)</title>
+            <style>
+                @page {
+                    size: 17in 11in landscape;
+                    margin: 0;
+                }
+                body {
+                    margin: 0;
+                    padding: 0;
+                    background: #f8fafc;
+                    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+                    -webkit-print-color-adjust: exact;
+                }
+                .banner-page {
+                    width: 17in;
+                    height: 11in;
+                    page-break-after: always;
+                    box-sizing: border-box;
+                    background: #ffffff;
+                    display: flex;
+                    align-items: center;
+                    justify-content: flex-start;
+                    padding: 0 0.8in;
+                    position: relative;
+                    overflow: hidden;
+                }
+                .banner-logo-container {
+                    width: 3.5in;
+                    height: 5.5in;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    margin-right: 0.6in;
+                    flex-shrink: 0;
+                }
+                .banner-logo {
+                    max-width: 100%;
+                    max-height: 100%;
+                    object-fit: contain;
+                }
+                .banner-text-box {
+                    flex: 1;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                }
+                .banner-line {
+                    font-weight: 900;
+                    color: #000000;
+                    line-height: 0.92;
+                    letter-spacing: -0.02em;
+                    white-space: nowrap;
+                    text-transform: uppercase;
+                }
+                @media print {
+                    body { background: transparent; }
+                    .banner-page { page-break-after: always; }
+                }
+            </style>
+        </head>
+        <body>
+    `;
+
+    visTeams.forEach(team => {
+        const [line1, line2] = splitTeamNameForBanner(team.name);
+        const maxChars = Math.max(line1.length, (line2 || '').length);
+        
+        // Calcular dinámicamente font-size exacto en vw/pt para garantiazar mismo tamaño arriba y abajo
+        let calculatedSizePt = 220;
+        if (maxChars > 12) calculatedSizePt = 120;
+        else if (maxChars > 9) calculatedSizePt = 145;
+        else if (maxChars > 7) calculatedSizePt = 175;
+        else if (maxChars > 5) calculatedSizePt = 210;
+        else calculatedSizePt = 250;
+
+        htmlContent += `
+            <div class="banner-page">
+                <div class="banner-logo-container">
+                    <img src="${team.logoUrl || 'https://crests.football-data.org/86.png'}" class="banner-logo" alt="${team.name}" />
+                </div>
+                <div class="banner-text-box">
+                    <div class="banner-line" style="font-size: ${calculatedSizePt}pt;">${line1}</div>
+                    ${line2 ? `<div class="banner-line" style="font-size: ${calculatedSizePt}pt;">${line2}</div>` : ''}
+                </div>
+            </div>
+        `;
+    });
+
+    htmlContent += `
+            ${autoPrint ? `<script>window.onload = function() { setTimeout(function() { window.print(); }, 400); };</script>` : ''}
+        </body>
+        </html>
+    `;
+
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+};
+
+export const generateTeamBannersPdf = (visTeams, showMessage) => {
+    printTeamBannersWindow(visTeams, showMessage, true);
+};
+

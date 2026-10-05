@@ -28,6 +28,8 @@ import {
     printTeamsAndPlayersRosterWindow,
     generateGroupShirtColorRosterPdf,
     printGroupShirtColorRosterWindow,
+    generateTeamBannersPdf,
+    printTeamBannersWindow,
     printInaugurationMatches
 } from './utils/pdfGenerator';
 import { copyFacebookSummaryText, printFacebookSummaryWindow } from './utils/facebookPoster';
@@ -1361,6 +1363,32 @@ export default function App() {
                                         className="btn-primary flex-1 min-w-[220px] flex items-center justify-center text-sm bg-gradient-to-r from-blue-700 to-indigo-800"
                                     >
                                         🖨️ Vista Previa e Imprimir por Grupos
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Card 6: Pancartas Oficiales de Equipos (Formato Tabloide 17" x 11") */}
+                        <div className="card p-6 space-y-4 border-t-4 border-rose-600 shadow-md lg:col-span-2">
+                            <h3 className="text-xl font-bold font-outfit text-slate-800 dark:text-white flex items-center border-b border-slate-100 dark:border-slate-700 pb-3">
+                                🚩 Pancartas Oficiales de Equipos (Formato Tabloide 17" x 11" Horizontal)
+                            </h3>
+                            <div className="p-5 bg-slate-50 dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+                                <p className="text-xs text-slate-500 dark:text-slate-400">
+                                    Genera las pancartas oficiales para desfiles y eventos en tamaño <strong>Tabloide Horizontal (17x11 pulgadas)</strong>. Cada pancarta incluye el escudo del equipo a la izquierda y el nombre en tipografía gigante con tamaño idéntico arriba y abajo.
+                                </p>
+                                <div className="flex flex-wrap gap-4">
+                                    <button 
+                                        onClick={() => generateTeamBannersPdf(visibleTeams, showMessage)} 
+                                        className="btn-primary flex-1 min-w-[220px] flex items-center justify-center text-sm bg-gradient-to-r from-rose-600 to-red-700"
+                                    >
+                                        📄 Generar PDF de Pancartas (Todos los Equipos)
+                                    </button>
+                                    <button 
+                                        onClick={() => printTeamBannersWindow(visibleTeams, showMessage)} 
+                                        className="btn-primary flex-1 min-w-[220px] flex items-center justify-center text-sm bg-gradient-to-r from-red-700 to-rose-800"
+                                    >
+                                        🖨️ Vista Previa e Imprimir Pancartas Tabloide
                                     </button>
                                 </div>
                             </div>
